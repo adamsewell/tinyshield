@@ -2,7 +2,7 @@
 /*
 Plugin Name: tinyShield
 Version: 0.1.3
-Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection. 
+Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyElk Studios
 Author URI: https://adamsewell.me
@@ -198,7 +198,7 @@ class tinyShield{
 			return true;
 		}
 
-		return false;
+		return sanitize_text_field($response['body']);
 }
 
 	public static function log_failed_login($username){
@@ -238,15 +238,23 @@ class tinyShield{
 
 			if(empty($options['site_activation_key']) && isset($_POST['site_activation_key'])){
 				$maybe_activate = self::activate_site($_POST['site_activation_key']);
-				if(!$maybe_activate){
-?>
-					<div class="error"><p><strong><?php _e('There was a problem activating your site. Please contact support.', "tinyshield");?></strong></p></div>
-<?php
-				}else{
+
+				if(is_bool($maybe_activate) && $maybe_activate){
 					$options['site_activation_key'] = sanitize_text_field($_POST['site_activation_key']);
 					update_option('tinyshield_options', $options);
 ?>
-					<div class="updated"><p><strong><?php _e('Settings Updated', "tinyshield");?></strong></p></div>
+					<div class="updated"><p><strong><?php _e('Site Key Activated', 'tinyshield');?></strong></p></div>
+
+<?php
+				}else{
+					$error_messages = array(
+						'key_not_found' => 'Sorry, this key was not found. Please try again.',
+						'key_in_use' => 'Sorry, this key is already in use. Please try again.',
+						'key_expired' => 'This key is expired. Please renew your key.',
+						'key_banned' => 'This key has been banned.'
+					);
+?>
+					<div class="error"><p><strong><?php esc_attr_e($error_messages[$maybe_activate]); ?></strong></p></div>
 <?php
 
 				}
