@@ -2,7 +2,7 @@
 /*
 Plugin Name: tinyShield
 Version: 0.1.3
-Description: tinyShield.me is a security plugin that utilizes real-time blacklists. Unlike other plugins, we do not send a huge list over to the plugin but rather utilize real time lookups.
+Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection. 
 Plugin URI: https://tinyshield.me
 Author: tinyElk Studios
 Author URI: https://adamsewell.me
@@ -46,7 +46,7 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 ?>
 		<?php if(empty($options['site_activation_key'])): ?>
-			<div class="error"><p><strong><?php _e('tinyShield: This site is not registered. Before this plugin will work, you must register your site and activate the plugin using the key provided. tinyShield settings can be found under the Settings menu. <a target="_blank" href="' . esc_attr(self::$tinyshield_signup_url) . '">tinyShield Signup</a>', 'tinyshield');?></strong></p></div>
+			<div class="error"><p><strong><?php _e('tinyShield: This site is not registered. Before this plugin will work, you must register your site and activate the plugin using the key provided. tinyShield settings can be found under the Settings menu. <a target="_blank" href="' . esc_attr(self::$tinyshield_signup_url) . '">tinyShield Registration</a>', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 <?php
 	}
