@@ -12,7 +12,7 @@ tinyShield is made up of two components - the WordPress plugin and our servers. 
 While tinyShield collects information from your site, as you can see from the code we only collect the offending IP address, failed user login attempts, and the site the attempt was made on. These items are only logged to determine patterns. No information we collect will EVER be sold or given to third parties.
 
 ## Pricing
-Currently, there is no charge for the community version of this service. There will be a premium version of the service in the future.
+Currently, there is no charge for the community version of this service. The premium feed, billed annually at $2.50 USD per month, will not only help you support the project but also give you access to a more comprehensive feed automatically.
 
 ## Performance and Downtime
 In our testing, we have noticed no performance issues while using the plugin. If for some reason our servers are unreachable, the plugin will fail open. This means that if our servers are down for any reason, your site will continue to work and utilize the local cached lists.
