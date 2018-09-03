@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield
-Version: 0.1.3
+Version: 0.1.4
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyElk Studios
@@ -21,6 +21,10 @@ Author URI: https://adamsewell.me
 	along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 */
 if(!defined('ABSPATH')) die();
+
+include_once(plugin_dir_path(__FILE__) . 'lib/blacklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/whitelist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/perm_whitelist_tables.php');
 
 class tinyShield{
 
@@ -261,9 +265,9 @@ class tinyShield{
 			}
 		}
 
-		/*
-			Permanent Whitelist Update
-		*/
+		/*****************************************
+			Permanent Whitelist Custom Update Action
+		******************************************/
 		if(isset($_POST['tinyshield_perm_whitelist_update'])){
 			check_admin_referer('update-tinyshield-perm-whitelist');
 
@@ -275,23 +279,75 @@ class tinyShield{
 				$cached_perm_whitelist[ip2long($_POST['perm_ip_to_whitelist'])] = strtotime('+30 years');
 				update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 ?>
-				<div class="updated"><p><strong><?php _e('Settings Updated', "tinyshield");?></strong></p></div>
+				<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Whitelist', "tinyshield");?></strong></p></div>
 <?php
 			}
 		}
 
+		/*****************************************
+		 	Delete Perm Whitelist Action
+		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'delete-perm-whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'delete-tinyshield-perm-whitelist-item')){
 			unset($cached_perm_whitelist[$_GET['iphash']]);
 			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 ?>
-			<div class="updated"><p><strong><?php _e('Address has been removed', "tinyshield");?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Whitelist', "tinyshield");?></strong></p></div>
 <?php
 		}
 
+		/*****************************************
+		 	Move Whitelist to Blacklist Action
+		******************************************/
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_blacklist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-blacklist')){
+			$cached_blacklist[$_GET['iphash']] = strtotime('+24 hours');
+			unset($cached_whitelist[$_GET['iphash']]);
+
+			update_option('tinyshield_cached_whitelist', $cached_whitelist);
+			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+?>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist and has been placed in the Permanent Whitelist.', "tinyshield");?></strong></p></div>
+<?php
+		}
+
+		/*****************************************
+		 	Move to Perm Whitelist Action
+		******************************************/
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_perm_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-perm_whitelist')){
+			$cached_perm_whitelist[$_GET['iphash']] = strtotime('+30 years');
+			unset($cached_blacklist[$_GET['iphash']]);
+
+			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
+			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+?>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist and has been placed in the Permanent Whitelist.', "tinyshield");?></strong></p></div>
+<?php
+		}
+
+		/*****************************************
+			Delete IP Address from Blacklist Action
+		******************************************/
+		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_blacklist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-blacklist-item')){
+			unset($cached_blacklist[$_GET['iphash']]);
+			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+?>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', "tinyshield");?></strong></p></div>
+<?php
+		}
+
+		/*****************************************
+			Delete IP Address from Whitelist Action
+		******************************************/
+		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-whitelist-item')){
+			unset($cached_whitelist[$_GET['iphash']]);
+			update_option('tinyshield_cached_whitelist', $cached_whitelist);
+?>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', "tinyshield");?></strong></p></div>
+<?php
+		}
 ?>
 			<div class="wrap">
 				<?php $active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'settings'; ?>
-				<h2> <?php _e('tinyShield', 'tinyshield') ?></h2>
+				<h2> <?php _e('tinyShield - Simple. Focused. Security.', 'tinyshield') ?></h2>
 				<h2 class="nav-tab-wrapper">
 					<a href="?page=tinyshield.php&tab=settings" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
 					<a href="?page=tinyshield.php&tab=perm-whitelist" class="nav-tab <?php echo $active_tab == 'perm-whitelist' ? 'nav-tab-active' : ''; ?>">Permanent Whitelist (<?php echo count($cached_perm_whitelist); ?>)</a>
@@ -328,37 +384,46 @@ class tinyShield{
 						<p>These are addresses that are permanently allowed to access the site even if they are found in a black list. This is useful for false positives. The permanent whitelist is checked before any other check is performed.</p>
 						<hr />
 						<p><input type="text" name="perm_ip_to_whitelist" size="36" placeholder="<?php _e('Enter a valid single IP Address...', 'tinyshield'); ?>" value=""> <input type="submit" class="button button-primary" name="tinyshield_perm_whitelist_update" value="<?php _e('Save Whitelist', 'tinyshield') ?>" /></p>
-						<ul>
-							<?php foreach($cached_perm_whitelist as $iphash => $expires): ?>
-								<li><?php echo long2ip($iphash); ?> - <a class="dashicons dashicons-trash" href="?page=tinyshield.php&amp;tab=perm-whitelist&amp;action=delete-perm-whitelist&amp;iphash=<?php echo esc_attr($iphash);?>&amp;_wpnonce=<?php echo $delete_item_nonce; ?>"></a></li>
-							<?php endforeach; ?>
-						</ul>
+					</form>
+					<?php
+						$tinyShield_PermWhiteList_Table = new tinyShield_PermWhiteList_Table();
+						$tinyShield_PermWhiteList_Table->prepare_items();
+					?>
+					<form id="perm-whitelist-table" method="get">
+						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
+						<?php $tinyShield_PermWhiteList_Table->display(); ?>
 					</form>
 			  <?php endif; ?>
 				<?php if($active_tab == 'whitelist'): ?>
 					<h3>Whitelist</h3>
 					<p>These are addresses that have been checked and are not known to be malicious at this time. Addresses will remain cached for 24 hours and then will be checked again.</p>
 					<hr />
-					<ul>
-						<?php foreach($cached_whitelist as $iphash => $expires): ?>
-							<li><?php echo long2ip($iphash); ?> - Expires: <?php echo date(get_option('date_format'), $expires) . ' at ' . date(get_option('time_format'), $expires); ?> - <a target="_blank" href="http://www.geoplugin.net/xml.gp?ip=<?php echo esc_attr(long2ip($iphash)) ?>">more info</a></li>
-						<?php endforeach; ?>
-					</ul>
+					<?php
+						$tinyShield_WhiteList_Table = new tinyShield_WhiteList_Table();
+						$tinyShield_WhiteList_Table->prepare_items();
+					?>
+					<form id="whitelist-table" method="get">
+						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
+						<?php $tinyShield_WhiteList_Table->display(); ?>
+					</form>
 			  <?php endif; ?>
 				<?php if($active_tab == 'blacklist'): ?>
 					<h3>Blacklist</h3>
 					<p>These are addresses that have tried to visit your site and been found to be malicious. Requests from these addresses are blocked and will remain cached for 24 hours and then will be checked again.</p>
 					<hr />
-					<ul>
-						<?php foreach($cached_blacklist as $iphash => $expires): ?>
-							<li><?php echo long2ip($iphash); ?> - Expires: <?php echo date(get_option('date_format'), $expires) . ' at ' .date(get_option('time_format'), $expires); ?> - <a target="_blank" href="http://www.geoplugin.net/xml.gp?ip=<?php echo esc_attr(long2ip($iphash)) ?>">more info</a></li>
-						<?php endforeach; ?>
-					</ul>
+					<?php
+						$tinyShield_BlackList_Table = new tinyShield_BlackList_Table();
+						$tinyShield_BlackList_Table->prepare_items();
+					?>
+					<form id="blacklist-table" method="get">
+						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
+						<?php $tinyShield_BlackList_Table->display(); ?>
+					</form>
 				<?php endif; ?>
 
 			</div> <!--end div -->
 <?php
 	}
-} //End WPSheild Class
+} //End tinyShield Class
 
 $tinyShield = new tinyShield();
