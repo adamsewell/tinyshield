@@ -98,8 +98,8 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 			}
     }
 
-		$orderby = ($_REQUEST['orderby'] == 'iphash') ? 'iphash' : 'expires'; //If no sort, default to title
-		$order = ($_REQUEST['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
+    $orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'expires'; //If no sort, default to title
+		$order = (isset($_GET['order']) && $_GET['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
 
     $iphash = array_column($data, 'iphash');
     $expires = array_column($data, 'expires');
