@@ -18,4 +18,6 @@ Currently, there is no charge for the community version of this service. There w
 In our testing, we have noticed no performance issues while using the plugin. If for some reason our servers are unreachable, the plugin will fail open. This means that if our servers are down for any reason, your site will continue to work and utilize the local cached lists.
 
 ## Other web application firewalls
-While tinyShield does not cause any known conflicts with other WordPress security plugins, and can work well alongside them as an extra layer of protection.  It takes a very targeted approach to just real time blacklists.
+While tinyShield does not cause any known conflicts with other WordPress security plugins, and can work well alongside them as an extra layer of protection.  It takes a very targeted approach to just real time blacklists. There are however, some plugins that are known to cause tinyShield to not operate normally. They are listed below.
+
+* wp-spamshield
