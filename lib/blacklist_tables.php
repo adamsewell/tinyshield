@@ -90,10 +90,11 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 		$data = array();
 
 		if(is_array($cached_blacklist) && !empty($cached_blacklist)){
-			foreach($cached_blacklist as $iphash => $expires){
+			foreach($cached_blacklist as $iphash => $iphash_data){
+        $iphash_data = json_decode($iphash_data);
 				$data[] = array(
 					'iphash' => long2ip($iphash),
-					'expires' => date(get_option('date_format'), $expires) . ' at ' . date(get_option('time_format'), $expires)
+          'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires)
 				);
 			}
     }

@@ -29,7 +29,7 @@ include_once(plugin_dir_path(__FILE__) . 'lib/perm_whitelist_tables.php');
 class tinyShield{
 
 	private static $tinyshield_report_url = 'https://endpoint.tinyshield.me/report';
-	private static $tinyshield_check_url = 'https://endpoint.tinyshield.me/check';
+	private static $tinyshield_check_url = 'https://endpoint.tinyshield.me/checkv2';
 	private static $tinyshield_signup_url = 'https://tinyshield.me/signup';
 	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activate';
 
@@ -79,7 +79,7 @@ class tinyShield{
 
 		if(!is_array($cached_perm_whitelist)){
 			$cached_perm_whitelist = array();
-			$cached_perm_whitelist[ip2long(self::get_valid_ip())] = strtotime('+30 years');
+			$cached_perm_whitelist[ip2long(self::get_valid_ip())] = json_encode(array('expires' => strtotime('+30 years')));
 			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 		}
 
@@ -99,7 +99,7 @@ class tinyShield{
 		if($ip && !self::check_ip_whitelist($ip)){
 
 			//check local cached ips
-			if(!empty($cached_blacklist) && array_key_exists(ip2long($ip), $cached_blacklist) && $cached_blacklist[ip2long($ip)] >= time()){
+			if(!empty($cached_blacklist) && array_key_exists(ip2long($ip), $cached_blacklist)){
 				header('HTTP/1.0 403 Forbidden');
 				exit;
 			}
@@ -127,12 +127,17 @@ class tinyShield{
 			)
 		);
 
-		if(!is_wp_error($response) && $response['body'] == ip2long($ip)){
-			$cached_blacklist[ip2long($ip)] = strtotime('+24 hours');
+		if(!empty($response['body'])){
+			$list_data = json_decode($response['body']);
+			$list_data->expires = strtotime('+24 hours');
+		}
+
+		if(!is_wp_error($response) && is_object($list_data) && $list_data->action == 'block'){ //blacklist
+			$cached_blacklist[ip2long($ip)] = json_encode($list_data);
 			update_option('tinyshield_cached_blacklist', $cached_blacklist);
 			return true;
-		}elseif(!is_wp_error($response) && $response['body'] == 'non_blacklist'){
-			$cached_whitelist[ip2long($ip)] = strtotime('+24 hours');
+		}elseif(!is_wp_error($response) && is_object($list_data) && $list_data->action == 'allow'){ //whitelist
+			$cached_whitelist[ip2long($ip)] = json_encode($list_data);
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 			return false;
 		}
@@ -147,8 +152,11 @@ class tinyShield{
 				return true;
 			}
 
-			if(array_key_exists(ip2long($ip), $cached_whitelist) && $cached_whitelist[ip2long($ip)] >= time()){
-				return true;
+			if(array_key_exists(ip2long($ip), $cached_whitelist)){
+				$ip_meta = json_decode($cached_whitelist[ip2long($ip)]);
+				if($ip_meta->expires >= time()){
+					return true;
+				}
 			}
 		}
 
@@ -159,14 +167,18 @@ class tinyShield{
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
 
-		foreach($cached_blacklist as $iphash => $expires){
-			if($expires < time()){
+		foreach($cached_blacklist as $iphash => $iphash_data){
+			$iphash_data = json_decode($iphash_data);
+
+			if($iphash_data->expires < time()){
 				unset($cached_blacklist[$iphash]);
 			}
 		}
 
-		foreach($cached_whitelist as $iphash => $expires){
-			if($expires < time()){
+		foreach($cached_whitelist as $iphash => $iphash_data){
+			$iphash_data = json_decode($iphash_data);
+
+			if($iphash_data->expires < time()){
 				unset($cached_whitelist[$iphash]);
 			}
 		}
@@ -276,7 +288,10 @@ class tinyShield{
 				<div class="error"><p><strong><?php _e('Please enter a valid IP address.', "tinyshield");?></strong></p></div>
 <?php
 			}else{
-				$cached_perm_whitelist[ip2long($_POST['perm_ip_to_whitelist'])] = strtotime('+30 years');
+				$perm_whitelist_entry = new stdClass();
+				$perm_whitelist_entry->expires = strtotime('+30 years');
+
+				$cached_perm_whitelist[ip2long($_POST['perm_ip_to_whitelist'])] = json_encode($perm_whitelist_entry);
 				update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 ?>
 				<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Whitelist', "tinyshield");?></strong></p></div>
