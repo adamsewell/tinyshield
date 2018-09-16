@@ -31,11 +31,14 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 	}
 
 	function column_iphash($item){
-    $move_item_to_perm_whitelist_nonce = wp_create_nonce('tinyshield-move-item-perm_whitelist');
+    $move_item_to_perm_whitelist_nonce = wp_create_nonce('tinyshield-move-item-perm-whitelist');
+    $move_item_to_whitelist_nonce = wp_create_nonce('tinyshield-move-item-whitelist');
     $blacklist_item_remove_nonce = wp_create_nonce('tinyshield-delete-blacklist-item');
+
 		$actions = array(
-			'add_to_perm_whitelist' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Whitelist Permanently</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_perm_whitelist_nonce, ip2long($item['iphash'])),
-			'delete' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Blacklist</a>', $_REQUEST['page'], 'remove_from_blacklist', $blacklist_item_remove_nonce, ip2long($item['iphash']))
+      'add_to_whitelist' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Whitelist</a>',$_REQUEST['page'], 'add_to_whitelist', $move_item_to_whitelist_nonce, ip2long($item['iphash'])),      
+			'add_to_perm_whitelist' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Permanent Whitelist</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_perm_whitelist_nonce, ip2long($item['iphash'])),
+      'delete' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Blacklist</a>', $_REQUEST['page'], 'remove_from_blacklist', $blacklist_item_remove_nonce, ip2long($item['iphash']))
 		);
 
     //Return the title contents
@@ -44,12 +47,6 @@ class tinyShield_BlackList_Table extends WP_List_Table{
         /*$2%s*/ $item['expires'],
         /*$3%s*/ $this->row_actions($actions)
     );
-
-    // return sprintf('%1$s <span style="color:silver">(id:%2$s)</span>%3$s',
-    //     /*$1%s*/ $item['iphash'],
-    //     /*$2%s*/ $item['expires'],
-    //     /*$3%s*/ $this->row_actions($actions)
-    // );
 	}
 
 	function column_cb($item){
@@ -58,8 +55,10 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 
 	function get_columns(){
 		$columns = array(
-			'cb' => '<input type="checkbox" />',
+      'cb' => '<input type="checkbox" />',
 			'iphash' => 'IP Address',
+      'rdns' => 'Hostname',
+      'origin' => 'Location',
 			'expires' => 'Expires'
 		);
 
@@ -94,7 +93,9 @@ class tinyShield_BlackList_Table extends WP_List_Table{
         $iphash_data = json_decode($iphash_data);
 				$data[] = array(
 					'iphash' => long2ip($iphash),
-          'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires)
+          'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires),
+          'origin' => $iphash_data->geo_ip->country_flag_emoji . ' ' . $iphash_data->geo_ip->country_name,
+          'rdns' => $iphash_data->rdns
 				);
 			}
     }
