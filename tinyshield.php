@@ -100,12 +100,16 @@ class tinyShield{
 
 			//check local cached ips
 			if(!empty($cached_blacklist) && array_key_exists(ip2long($ip), $cached_blacklist)){
+				self::write_log('tinyShield: Blocked Local Blacklisted IP: ' . $ip);
+
 				header('HTTP/1.0 403 Forbidden');
 				exit;
 			}
 
 			//if not in cache, remote lookup
 			if(self::check_ip_blacklist($ip)){
+				self::write_log('tinyShield: Blocked Remote Lookup Blacklisted IP: ' . $ip);
+
 				header('HTTP/1.0 403 Forbidden');
 				exit;
 			}
@@ -130,6 +134,9 @@ class tinyShield{
 		if(!empty($response['body'])){
 			$list_data = json_decode($response['body']);
 			$list_data->expires = strtotime('+24 hours');
+
+			self::write_log('tinyShield: Blacklist Lookup Response');
+			self::write_log($list_data);
 		}
 
 		if(!is_wp_error($response) && is_object($list_data) && $list_data->action == 'block'){ //blacklist
@@ -193,6 +200,16 @@ class tinyShield{
 		}
 
 		return false;
+	}
+
+	private static function write_log($log){
+		if(true === WP_DEBUG){
+			if(is_array($log) || is_object($log)){
+				error_log(print_r($log, true));
+			}else{
+				error_log($log);
+			}
+		}
 	}
 
 	private static function activate_site($key){
