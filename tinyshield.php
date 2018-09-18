@@ -397,7 +397,7 @@ class tinyShield{
 
 						<h3><?php _e('Activation Key', 'tinyshield') ?></h3>
 						<p>Each site using this plugin is required to have an activation key. For a key, visit <a target="_blank" href="<?php echo esc_attr(self::$tinyshield_signup_url); ?>"><?php echo esc_attr(self::$tinyshield_signup_url); ?></a></p>
-						<p><input type="text" name="site_activation_key" size="24" value="<?php echo esc_attr($options['site_activation_key']); ?>"></p>
+						<p><input <?php echo ($options['site_activation_key']) ? 'type="password"' : 'type="text"' ?> name="site_activation_key" size="32" value="<?php echo esc_attr($options['site_activation_key']); ?>"></p>
 
 						<div class="submit">
 							<input type="submit" class="button button-primary" name="tinyshield_save_options" value="<?php _e('Save Settings', 'tinyshield') ?>" />
