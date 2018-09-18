@@ -331,7 +331,13 @@ class tinyShield{
 		 	Move to Blacklist Action
 		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'add_to_blacklist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-blacklist')){
-			$cached_blacklist[$_GET['iphash']] = strtotime('+24 hours');
+			$new_bl_item = json_decode($cached_whitelist[$_GET['iphash']]);
+			$new_bl_item->action = 'block';
+			$new_bl_item->date_added = time();
+			$new_bl_item->expires = strtotime('+24 hours');
+
+			$cached_blacklist[$_GET['iphash']] = json_encode($new_bl_item);
+
 			unset($cached_whitelist[$_GET['iphash']]);
 
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
@@ -347,8 +353,10 @@ class tinyShield{
 		if(isset($_GET['action']) && $_GET['action'] == 'add_to_perm_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-perm-whitelist')){
 			$cached_perm_whitelist[$_GET['iphash']] = strtotime('+30 years');
 			unset($cached_blacklist[$_GET['iphash']]);
+			unset($cached_whitelist[$_GET['iphash']]);
 
 			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
+			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 			update_option('tinyshield_cached_blacklist', $cached_blacklist);
 ?>
 			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Permanent Whitelist.', "tinyshield");?></strong></p></div>
@@ -363,6 +371,26 @@ class tinyShield{
 			update_option('tinyshield_cached_blacklist', $cached_blacklist);
 ?>
 			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', "tinyshield");?></strong></p></div>
+<?php
+		}
+
+		/*****************************************
+			Move to Whitelist Action
+		******************************************/
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-whitelist')){
+			$new_wl_item = json_decode($cached_blacklist[$_GET['iphash']]);
+			$new_wl_item->action = 'allow';
+			$new_wl_item->date_added = time();
+			$new_wl_item->expires = strtotime('+24 hours');
+
+			$cached_whitelist[$_GET['iphash']] = json_encode($new_wl_item);
+
+			unset($cached_blacklist[$_GET['iphash']]);
+			update_option('tinyshield_cached_whitelist', $cached_whitelist);
+			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+
+?>
+			<div class="updated"><p><strong><?php _e('The IP Address has added to the Whitelist.', "tinyshield");?></strong></p></div>
 <?php
 		}
 

@@ -36,7 +36,7 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
     $whitelist_item_remove_nonce = wp_create_nonce('tinyshield-delete-whitelist-item');
 
 		$actions = array(
-			'add_to_perm_whitelist' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s">Permanent Whitelist</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_blacklist_nonce, ip2long($item['iphash'])),
+			'add_to_perm_whitelist' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s">Permanent Whitelist</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_perm_whitelist_nonce, ip2long($item['iphash'])),
       'add_to_blacklist' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s">Blacklist</a>',$_REQUEST['page'], 'add_to_blacklist', $move_item_to_blacklist_nonce, ip2long($item['iphash'])),
       'delete' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s">Remove from Whitelist</a>', $_REQUEST['page'], 'remove_from_whitelist', $whitelist_item_remove_nonce, ip2long($item['iphash']))
 		);
