@@ -82,10 +82,11 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 		$data = array();
 
 		if(is_array($cached_perm_whitelist) && !empty($cached_perm_whitelist)){
-			foreach($cached_perm_whitelist as $iphash => $expires){
+			foreach($cached_perm_whitelist as $iphash => $meta){
+        $meta = json_decode($meta);
 				$data[] = array(
 					'iphash' => long2ip($iphash),
-          'expires' => date(get_option('date_format'), $expires) . ' at ' . date(get_option('time_format'), $expires)
+          'expires' => date(get_option('date_format'), $meta->expires) . ' at ' . date(get_option('time_format'), $meta->expires)
 				);
 			}
     }
