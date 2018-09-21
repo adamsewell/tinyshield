@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield
-Version: 0.1.4
+Version: 0.1.5
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyElk Studios
@@ -79,7 +79,11 @@ class tinyShield{
 
 		if(!is_array($cached_perm_whitelist)){
 			$cached_perm_whitelist = array();
-			$cached_perm_whitelist[ip2long(self::get_valid_ip())] = json_encode(array('expires' => strtotime('+30 years')));
+
+			$perm_whitelist_entry = new stdClass();
+			$perm_whitelist_entry->expires = strtotime('+30 years');
+
+			$cached_perm_whitelist[ip2long(self::get_valid_ip())] = json_encode($perm_whitelist_entry);
 			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 		}
 
