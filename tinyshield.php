@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield
-Version: 0.1.5
+Version: 0.1.6
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyElk Studios
@@ -41,7 +41,7 @@ class tinyShield{
 		add_action('admin_notices', 'tinyShield::notices');
 		add_action('plugins_loaded', 'tinyShield::maybe_block', 0);
 
-		//hook into the failed login attempt and report home
+		//hook into the failed login attempts and report back
 		add_filter('wp_login_failed', 'tinyShield::log_failed_login');
 
 	}
@@ -381,11 +381,11 @@ class tinyShield{
 		/*****************************************
 			Move to Whitelist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'add_to_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-whitelist')){
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_whitelist' && is_numeric($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-whitelist')){
 			$new_wl_item = json_decode($cached_blacklist[$_GET['iphash']]);
 			$new_wl_item->action = 'allow';
 			$new_wl_item->date_added = time();
-			$new_wl_item->expires = strtotime('+24 hours');
+			$new_wl_item->expires = strtotime('+1 hour');
 
 			$cached_whitelist[$_GET['iphash']] = json_encode($new_wl_item);
 
@@ -460,7 +460,7 @@ class tinyShield{
 			  <?php endif; ?>
 				<?php if($active_tab == 'whitelist'): ?>
 					<h3>Whitelist</h3>
-					<p>These are addresses that have been checked and are not known to be malicious at this time. Addresses will remain cached for 24 hours and then will be checked again.</p>
+					<p>These are addresses that have been checked and are not known to be malicious at this time. Addresses will remain cached for 1 hour and then will be checked again.</p>
 					<hr />
 					<?php
 						$tinyShield_WhiteList_Table = new tinyShield_WhiteList_Table();
