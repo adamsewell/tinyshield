@@ -34,7 +34,6 @@ class tinyShield{
 	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activate';
 
 	public function __construct(){
-		//default stuff
 		register_activation_hook(__FILE__, 'tinyShield::on_activation');
 
 		add_action('admin_menu', 'tinyShield::add_menu');
@@ -43,6 +42,9 @@ class tinyShield{
 
 		//hook into the failed login attempts and report back
 		add_filter('wp_login_failed', 'tinyShield::log_failed_login');
+
+		//hook into the redirect_canonical filter to detect user enumeration
+		//add_filter('redirect_canonical', 'tinyShield::log_user_enumeration', 10, 2);
 
 	}
 
@@ -239,26 +241,33 @@ class tinyShield{
 }
 
 	public static function log_failed_login($username){
-		$remote_ip = self::get_valid_ip();
-		if($remote_ip){
-			$report = self::report_failed_logins($remote_ip, $username, current_time('timestamp', true));
+		$options = get_option('tinyshield_options');
+
+		if($options['report_failed_logins']){
+			$remote_ip = self::get_valid_ip();
+			if($remote_ip){
+				$response = wp_remote_post(
+					self::$tinyshield_report_url,
+					array(
+						'body' => array(
+							'ip_to_report' => $remote_ip,
+							'username_tried' => $username,
+							'reporting_site' => site_url(),
+							'time_of_occurance' => current_time('timestamp', true)
+						)
+					)
+				);
+			}
 		}
 	}
 
-	private static function report_failed_logins($ip_to_report, $username_tried, $time){
-		$response = wp_remote_post(
-			self::$tinyshield_report_url,
-			array(
-				'body' => array(
-					'ip_to_report' => $ip_to_report,
-					'username_tried' => $username_tried,
-					'reporting_site' => site_url(),
-					'time_of_occurance' => $time
-				)
-			)
-		);
+	public static function log_user_enumeration($redirect, $request){
+		$remote_ip = self::get_valid_ip();
 
-		return $response;
+		if(preg_match('/\?author=([0-9]*)(\/*)/i', $request)){
+			var_dump($request);
+			die();
+		}
 	}
 
 	public static function display_options(){
@@ -267,35 +276,64 @@ class tinyShield{
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
 		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
 
+		$errors = '';
+		$alerts = '';
+
 		/*****************************************
 				Settings Page Update
 		*****************************************/
 		if(isset($_POST['tinyshield_save_options'])) {
 			check_admin_referer('update-tinyshield-options');
 
+			$success_messages = array(
+				'site_key_activated' => 'Site Key Activated',
+				'settings_updated' => 'Settings Updated'
+			);
+
+			$error_messages = array(
+				'key_not_found' => 'Sorry, this key was not found. Please try again.',
+				'key_in_use' => 'Sorry, this key is already in use. Please try again.',
+				'key_expired' => 'This key is expired. Please renew your key.',
+				'key_banned' => 'This key has been banned.'
+			);
+
+			// Process key activations
 			if(empty($options['site_activation_key']) && isset($_POST['site_activation_key'])){
 				$maybe_activate = self::activate_site($_POST['site_activation_key']);
 
 				if(is_bool($maybe_activate) && $maybe_activate){
 					$options['site_activation_key'] = sanitize_text_field($_POST['site_activation_key']);
 					update_option('tinyshield_options', $options);
-?>
-					<div class="updated"><p><strong><?php _e('Site Key Activated', 'tinyshield');?></strong></p></div>
+					$alerts = $success_messages['site_key_activated'];
 
-<?php
 				}else{
-					$error_messages = array(
-						'key_not_found' => 'Sorry, this key was not found. Please try again.',
-						'key_in_use' => 'Sorry, this key is already in use. Please try again.',
-						'key_expired' => 'This key is expired. Please renew your key.',
-						'key_banned' => 'This key has been banned.'
-					);
-?>
-					<div class="error"><p><strong><?php esc_attr_e($error_messages[$maybe_activate]); ?></strong></p></div>
-<?php
-
+					$errors = $error_messages[$maybe_activate];
 				}
 			}
+
+			// Update options
+			if(!empty($_POST['report_failed_logins']) && $_POST['report_failed_logins'] == 'on'){
+				$options['report_failed_logins'] = true;
+				$alerts = $success_messages['settings_updated'];
+			}else{
+				$options['report_failed_logins'] = false;
+				$alerts = $success_messages['settings_updated'];
+			}
+
+			if(!empty($alerts)){
+?>
+				<div class="updated"><p><strong><?php esc_attr_e($alerts);?></strong></p></div>
+<?php
+			}
+
+			if(!empty($errors)){
+?>
+				<div class="error"><p><strong><?php esc_attr_e($errors); ?></strong></p></div>
+<?php
+			}
+
+			update_option('tinyshield_options', $options);
+
 		}
 
 		/*****************************************
@@ -427,14 +465,18 @@ class tinyShield{
 							}
 						?>
 
-						<h3><?php _e('Activation Key', 'tinyshield') ?></h3>
+						<h3><?php _e('Activation Key', 'tinyshield'); ?></h3>
 						<p>Each site using this plugin is required to have an activation key. For a key, visit <a target="_blank" href="<?php echo esc_attr(self::$tinyshield_signup_url); ?>"><?php echo esc_attr(self::$tinyshield_signup_url); ?></a></p>
 						<p><input <?php echo ($options['site_activation_key']) ? 'type="password"' : 'type="text"' ?> name="site_activation_key" size="32" value="<?php echo esc_attr($options['site_activation_key']); ?>"></p>
 
+						<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
+						<p>Toggle this to enable or disable reporting failed logins to tinyShield. Enabled by default.</p>
+						<p><input type="checkbox" name="report_failed_logins" id="report_failed_logins" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins">Report Failed Logins?</label></p>
 						<div class="submit">
 							<input type="submit" class="button button-primary" name="tinyshield_save_options" value="<?php _e('Save Settings', 'tinyshield') ?>" />
 						</div>
 					</form>
+
 				<?php endif; ?>
 				<?php if($active_tab == 'perm-whitelist'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
