@@ -58,7 +58,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
         'cb' => '<input type="checkbox" />',
   			'iphash' => 'IP Address',
         'rdns' => 'Hostname',
-        'location' => 'Location',
+        'origin' => 'Location',
         'action' => 'Action',
   			'expires' => 'Expires'
   		);
@@ -98,15 +98,13 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
         $iphash_data = json_decode($iphash_data);
 				$data[] = array(
           'action' => $action_messages[$iphash_data->action],
-          'location' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
+          'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
 					'iphash' => long2ip($iphash),
           'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires),
           'rdns' => $iphash_data->rdns
 				);
 			}
     }
-
-    //echo '<pre>'; print_r($data); echo '</pre>';
 
 		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'expires'; //If no sort, default to title
 		$order = (isset($_GET['order']) && $_GET['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
