@@ -1,7 +1,7 @@
 <?php
 /*
-Plugin Name: tinyShield
-Version: 0.1.6
+Plugin Name: tinyShield - Simple. Focused. Security.
+Version: 0.1.7
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyElk Studios
@@ -24,6 +24,7 @@ if(!defined('ABSPATH')) die();
 
 include_once(plugin_dir_path(__FILE__) . 'lib/blacklist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/whitelist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/activity_log_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/perm_whitelist_tables.php');
 
 class tinyShield{
@@ -449,15 +450,31 @@ class tinyShield{
 		}
 ?>
 			<div class="wrap">
-				<?php $active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'settings'; ?>
+				<?php $active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'log'; ?>
 				<h2> <?php _e('tinyShield - Simple. Focused. Security.', 'tinyshield') ?></h2>
 				<h2 class="nav-tab-wrapper">
-					<a href="?page=tinyshield.php&tab=settings" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
+					<a href="?page=tinyshield.php&tab=log" class="nav-tab <?php echo $active_tab == 'log' ? 'nav-tab-active' : ''; ?>">Activity Log</a>
 					<a href="?page=tinyshield.php&tab=perm-whitelist" class="nav-tab <?php echo $active_tab == 'perm-whitelist' ? 'nav-tab-active' : ''; ?>">Permanent Whitelist (<?php echo count($cached_perm_whitelist); ?>)</a>
 					<a href="?page=tinyshield.php&tab=whitelist" class="nav-tab <?php echo $active_tab == 'whitelist' ? 'nav-tab-active' : ''; ?>">Whitelist (<?php echo count($cached_whitelist); ?>)</a>
 					<a href="?page=tinyshield.php&tab=blacklist" class="nav-tab <?php echo $active_tab == 'blacklist' ? 'nav-tab-active' : ''; ?>">Blacklist (<?php echo count($cached_blacklist); ?>)</a>
+					<a href="?page=tinyshield.php&tab=settings" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
 				</h2>
 
+				<?php if($active_tab == 'log'): ?>
+					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+						<h3>Activity Log</h3>
+						<p>View the latest traffic to your site and how it was dealt with by tinyShield.</p>
+						<hr />
+					</form>
+					<?php
+						$tinyShield_ActivityLog_Table = new tinyShield_ActivityLog_Table();
+						$tinyShield_ActivityLog_Table->prepare_items();
+					?>
+					<form id="activity-log-table" method="get">
+						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
+						<?php $tinyShield_ActivityLog_Table->display(); ?>
+					</form>
+				<?php endif; ?>
 				<?php if($active_tab == 'settings'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
 						<?php
