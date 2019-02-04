@@ -71,6 +71,7 @@ class tinyShield{
 
 		if(!is_array($options)){
 			$options = array();
+			$options['report_failed_logins'] = true;
 			update_option('tinyshield_options', $options);
 		}
 
