@@ -463,7 +463,7 @@ class tinyShield{
 				<?php if($active_tab == 'log'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
 						<h3>Activity Log</h3>
-						<p>View the latest traffic to your site and how it was dealt with by tinyShield.</p>
+						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Traffic is only shown once for each unique IP address and only while it appears within our white and black lists.</p>
 						<hr />
 					</form>
 					<?php
