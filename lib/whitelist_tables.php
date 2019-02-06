@@ -58,6 +58,7 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
         'cb' => '<input type="checkbox" />',
   			'iphash' => 'IP Address',
         'rdns' => 'Hostname',
+        'isp' => 'ISP',
         'origin' => 'Location',
   			'expires' => 'Expires'
   		);
@@ -95,6 +96,7 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
 					'iphash' => long2ip($iphash),
           'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires),
           'origin' => (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
+          'isp' => $iphash_data->geo_ip->isp,
           'rdns' => $iphash_data->rdns
 				);
 			}
