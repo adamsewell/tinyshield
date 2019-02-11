@@ -108,6 +108,12 @@ class tinyShield{
 
 			//check local cached ips
 			if(!empty($cached_blacklist) && array_key_exists(ip2long($ip), $cached_blacklist)){
+
+				$blacklist_data = json_decode($cached_blacklist[ip2long($ip)]);
+				$blacklist_data->last_attempt = strtotime('now');
+				$cached_blacklist[ip2long($ip)] = json_encode($blacklist_data);
+				update_option('tinyshield_cached_blacklist', $cached_blacklist);
+
 				self::write_log('tinyShield: Blocked Local Blacklisted IP: ' . $ip);
 
 				header('HTTP/1.0 403 Forbidden');
@@ -142,6 +148,7 @@ class tinyShield{
 		if(!empty($response['body'])){
 			$list_data = json_decode($response['body']);
 			$list_data->expires = strtotime('+24 hours');
+			$list_data->last_attempt = strtotime('now');
 
 			self::write_log('tinyShield: Blacklist Lookup Response');
 			self::write_log($list_data);
@@ -169,6 +176,10 @@ class tinyShield{
 
 			if(array_key_exists(ip2long($ip), $cached_whitelist)){
 				$ip_meta = json_decode($cached_whitelist[ip2long($ip)]);
+				$ip_meta->last_attempt = strtotime('now');
+				$cached_whitelist[ip2long($ip)] = json_encode($ip_meta);
+				update_option('tinyshield_cached_whitelist', $cached_whitelist);
+
 				if($ip_meta->expires >= time()){
 					return true;
 				}
@@ -463,7 +474,7 @@ class tinyShield{
 				<?php if($active_tab == 'log'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
 						<h3>Activity Log</h3>
-						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Traffic is only shown once for each unique IP address and only while it appears within our white and black lists.</p>
+						<p>View the latest traffic to your site and how it was dealt with by tinyShield.</p>
 						<hr />
 					</form>
 					<?php

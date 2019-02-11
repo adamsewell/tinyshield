@@ -57,6 +57,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
         'isp' => 'ISP',
         'origin' => 'Location',
         'action' => 'Action',
+        'last_attempt' => 'Last Access',
   			'expires' => 'Expires'
   		);
 
@@ -75,7 +76,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 		global $wpdb;
     $cached_whitelist = get_option('tinyshield_cached_whitelist');
     $cached_blacklist = get_option('tinyshield_cached_blacklist');
-    $action_messages = array('allow' => 'Allowed', 'block' => 'Blocked');
+    $action_messages = array('allow' => '✅', 'block' => '⛔');
 
 		$per_page = 25;
 
@@ -99,6 +100,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 					'iphash' => long2ip($iphash),
           'isp' => $iphash_data->geo_ip->isp,
           'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires),
+          'last_attempt' => (!empty($iphash_data->last_attempt) ? date(get_option('date_format'), $iphash_data->last_attempt) . ' at ' . date(get_option('time_format'), $iphash_data->last_attempt) : ''),
           'rdns' => $iphash_data->rdns
 				);
 			}

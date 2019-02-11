@@ -60,6 +60,7 @@ class tinyShield_BlackList_Table extends WP_List_Table{
       'rdns' => 'Hostname',
       'isp' => 'ISP',
       'origin' => 'Location',
+      'last_attempt' => 'Last Attempt',
 			'expires' => 'Expires'
 		);
 
@@ -69,6 +70,7 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 	function get_sortable_columns() {
 		$sortable_columns = array(
 				'iphash'     => array('iphash', false),     //true means it's already sorted
+        'last_attempt' => array('last_attempt', false),
 				'expires'    => array('expires', false),
 		);
 		return $sortable_columns;
@@ -95,6 +97,7 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 				$data[] = array(
 					'iphash' => long2ip($iphash),
           'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires),
+          'last_attempt' => (!empty($iphash_data->last_attempt) ? date(get_option('date_format'), $iphash_data->last_attempt) . ' at ' . date(get_option('time_format'), $iphash_data->last_attempt) : ''),
           'isp' => $iphash_data->geo_ip->isp,
           'origin' => (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
           'rdns' => $iphash_data->rdns
@@ -107,6 +110,7 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 
     $iphash = array_column($data, 'iphash');
     $expires = array_column($data, 'expires');
+    $last_attempt = array_column($data, 'last_attempt');
 
     array_multisort($$orderby, $order, $data);
 
