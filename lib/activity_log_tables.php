@@ -31,10 +31,10 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 	}
 
 	function column_iphash($item){
-    $move_item_to_perm_whitelist_nonce = wp_create_nonce('tinyshield-move-item-perm-whitelist');
+    $report_false_postiive_nonce = wp_create_nonce('tinyshield-report-false-positive');
 
 		$actions = array(
-			// 'add_to_whitelist' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s"> Whitelist</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_perm_whitelist_nonce, ip2long($item['iphash'])),
+			'report_false_positive' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s"> Report False Positive</a>', $_REQUEST['page'], 'report_false_positive', $report_false_postiive_nonce, ip2long($item['iphash'])),
 		);
 
     //Return the title contents
@@ -99,8 +99,8 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
           'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
 					'iphash' => long2ip($iphash),
           'isp' => $iphash_data->geo_ip->isp,
-          'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires),
-          'last_attempt' => (!empty($iphash_data->last_attempt) ? date(get_option('date_format'), $iphash_data->last_attempt) . ' at ' . date(get_option('time_format'), $iphash_data->last_attempt) : ''),
+          'expires' => date_i18n(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires),
+          'last_attempt' => (!empty($iphash_data->last_attempt) ? date_i18n(get_option('date_format'), $iphash_data->last_attempt) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->last_attempt) : ''),
           'rdns' => $iphash_data->rdns
 				);
 			}

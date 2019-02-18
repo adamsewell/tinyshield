@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.1.7
+Version: 0.1.8
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyElk Studios
@@ -264,6 +264,7 @@ class tinyShield{
 					array(
 						'body' => array(
 							'ip_to_report' => $remote_ip,
+							'type' => 'failed_logins',
 							'username_tried' => $username,
 							'reporting_site' => site_url(),
 							'time_of_occurance' => current_time('timestamp', true)
@@ -347,6 +348,25 @@ class tinyShield{
 
 			update_option('tinyshield_options', $options);
 
+		}
+
+		/*****************************************
+			Handle Reporting of False Positives
+		******************************************/
+		if(isset($_GET['action']) && $_GET['action'] == 'report_false_positive' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-report-false-positive')){
+			if(absint($_GET['iphash'])){
+				$response = wp_remote_post(
+					self::$tinyshield_report_url,
+					array(
+						'body' => array(
+							'ip_to_report' => long2ip($_GET['iphash']),
+							'type' => 'report_false_positive',
+							'reporting_site' => site_url(),
+							'time_of_occurance' => current_time('timestamp', true)
+						)
+					)
+				);
+			}
 		}
 
 		/*****************************************
@@ -474,7 +494,7 @@ class tinyShield{
 				<?php if($active_tab == 'log'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
 						<h3>Activity Log</h3>
-						<p>View the latest traffic to your site and how it was dealt with by tinyShield.</p>
+						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review.</p>
 						<hr />
 					</form>
 					<?php
