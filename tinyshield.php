@@ -145,23 +145,23 @@ class tinyShield{
 			)
 		);
 
-		if(!empty($response['body'])){
-			$list_data = json_decode($response['body']);
-			$list_data->expires = strtotime('+24 hours');
-			$list_data->last_attempt = strtotime('now');
-
+		if(!is_wp_error($response)){
 			self::write_log('tinyShield: Blacklist Lookup Response');
-			self::write_log($list_data);
-		}
+			if(!empty($response['body']) && is_object($list_data)){
+				$list_data = json_decode($response['body']);
+				$list_data->expires = strtotime('+24 hours');
+				$list_data->last_attempt = strtotime('now');
 
-		if(!is_wp_error($response) && is_object($list_data) && $list_data->action == 'block'){ //blacklist
-			$cached_blacklist[ip2long($ip)] = json_encode($list_data);
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
-			return true;
-		}elseif(!is_wp_error($response) && is_object($list_data) && $list_data->action == 'allow'){ //whitelist
-			$cached_whitelist[ip2long($ip)] = json_encode($list_data);
-			update_option('tinyshield_cached_whitelist', $cached_whitelist);
-			return false;
+				if($list_data->action == 'block'){
+					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
+					update_option('tinyshield_cached_blacklist', $cached_blacklist);
+					return true;
+				}elseif($list_data->action == 'allow'){
+					$cached_whitelist[ip2long($ip)] = json_encode($list_data);
+					update_option('tinyshield_cached_whitelist', $cached_whitelist);
+					return false;
+				}
+			}
 		}
 	}
 
