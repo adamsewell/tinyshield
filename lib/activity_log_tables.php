@@ -108,7 +108,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
     }
 
 		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'last_attempt'; //If no sort, default to title
-		$order = (isset($_GET['order']) && $_GET['order'] == 'desc') ? SORT_DESC : SORT_ASC; //If no order, default to asc
+		$order = (isset($_GET['order']) && strtolower($_GET['order']) == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
 
     $iphash = array_column($data, 'iphash');
     $last_attempt = array_column($data, 'last_attempt');
