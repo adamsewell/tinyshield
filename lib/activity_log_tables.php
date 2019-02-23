@@ -67,7 +67,8 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 	function get_sortable_columns() {
 		$sortable_columns = array(
 				'iphash'     => array('iphash', false),     //true means it's already sorted
-				'expires'    => array('expires', false),
+				'last_attempt'    => array('last_attempt', true),
+
 		);
 		return $sortable_columns;
 	}
@@ -99,18 +100,18 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
           'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
 					'iphash' => long2ip($iphash),
           'isp' => $iphash_data->geo_ip->isp,
-          'expires' => date_i18n(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires),
+          'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires),
           'last_attempt' => (!empty($iphash_data->last_attempt) ? date_i18n(get_option('date_format'), $iphash_data->last_attempt) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->last_attempt) : ''),
           'rdns' => $iphash_data->rdns
 				);
 			}
     }
 
-		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'expires'; //If no sort, default to title
-		$order = (isset($_GET['order']) && $_GET['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
+		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'last_attempt'; //If no sort, default to title
+		$order = (isset($_GET['order']) && $_GET['order'] == 'desc') ? SORT_DESC : SORT_ASC; //If no order, default to asc
 
     $iphash = array_column($data, 'iphash');
-    $expires = array_column($data, 'expires');
+    $last_attempt = array_column($data, 'last_attempt');
 
     array_multisort($$orderby, $order, $data);
 
