@@ -298,23 +298,24 @@ class tinyShield{
 		$errors = '';
 		$alerts = '';
 
+		$success_messages = array(
+			'site_key_activated' => 'Site Key Activated',
+			'settings_updated' => 'Settings Updated',
+			'blacklist_cleared' => 'Local Blacklist Has Been Cleared',
+			'whitelist_cleared' => 'Local Whitelist Has Been Cleared'
+		);
+
+		$error_messages = array(
+			'key_not_found' => 'Sorry, this key was not found. Please try again.',
+			'key_in_use' => 'Sorry, this key is already in use. Please try again.',
+			'key_expired' => 'This key is expired. Please renew your key.',
+			'key_banned' => 'This key has been banned.'
+		);
+
 		/*****************************************
 				Settings Page Update
 		*****************************************/
-		if(isset($_POST['tinyshield_save_options'])) {
-			check_admin_referer('update-tinyshield-options');
-
-			$success_messages = array(
-				'site_key_activated' => 'Site Key Activated',
-				'settings_updated' => 'Settings Updated'
-			);
-
-			$error_messages = array(
-				'key_not_found' => 'Sorry, this key was not found. Please try again.',
-				'key_in_use' => 'Sorry, this key is already in use. Please try again.',
-				'key_expired' => 'This key is expired. Please renew your key.',
-				'key_banned' => 'This key has been banned.'
-			);
+		if(isset($_POST['tinyshield_save_options']) && $_POST['tinyshield_action'] == 'options_save' && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-options')) {
 
 			// Process key activations
 			if(empty($options['site_activation_key']) && isset($_POST['site_activation_key'])){
@@ -339,26 +340,34 @@ class tinyShield{
 				$alerts = $success_messages['settings_updated'];
 			}
 
-			if(!empty($alerts)){
-?>
-				<div class="updated"><p><strong><?php esc_attr_e($alerts);?></strong></p></div>
-<?php
-			}
-
-			if(!empty($errors)){
-?>
-				<div class="error"><p><strong><?php esc_attr_e($errors); ?></strong></p></div>
-<?php
-			}
-
 			update_option('tinyshield_options', $options);
 
 		}
 
 		/*****************************************
+			Handle clearing of local blacklist
+		*****************************************/
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_blacklist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-blacklist')){
+			$cached_blacklist = array();
+			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+
+			$alerts = $success_messages['blacklist_cleared'];
+		}
+
+		/*****************************************
+			Handle clearing of local whitelist
+		*****************************************/
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_whitelist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-whitelist')){
+			$cached_whitelist = array();
+			update_option('tinyshield_cached_whitelist', $cached_whitelist);
+
+			$alerts = $success_messages['whitelist_cleared'];
+		}
+
+		/*****************************************
 			Handle Reporting of False Positives
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'report_false_positive' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-report-false-positive')){
+		if(isset($_GET['action']) && $_GET['action'] == 'report_false_positive' && is_numeric($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-report-false-positive')){
 			if(absint($_GET['iphash'])){
 				$response = wp_remote_post(
 					self::$tinyshield_report_url,
@@ -377,8 +386,7 @@ class tinyShield{
 		/*****************************************
 			Add Custom IP to Permanent Whitelist Action
 		******************************************/
-		if(isset($_POST['tinyshield_perm_whitelist_update'])){
-			check_admin_referer('update-tinyshield-perm-whitelist');
+		if(isset($_POST['tinyshield_perm_whitelist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-whitelist')){
 
 			if(empty($_POST['perm_ip_to_whitelist']) || !filter_var($_POST['perm_ip_to_whitelist'], FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
 ?>
@@ -399,7 +407,7 @@ class tinyShield{
 		/*****************************************
 		 	Delete Perm Whitelist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'delete-perm-whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'delete-tinyshield-perm-whitelist-item')){
+		if(isset($_GET['action']) && $_GET['action'] == 'delete-perm-whitelist' && is_numeric($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'delete-tinyshield-perm-whitelist-item')){
 			unset($cached_perm_whitelist[$_GET['iphash']]);
 			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 ?>
@@ -410,7 +418,7 @@ class tinyShield{
 		/*****************************************
 		 	Move to Blacklist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'add_to_blacklist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-blacklist')){
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_blacklist' && is_numeric($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-blacklist')){
 			$new_bl_item = json_decode($cached_whitelist[$_GET['iphash']]);
 			$new_bl_item->action = 'block';
 			$new_bl_item->date_added = time();
@@ -430,7 +438,7 @@ class tinyShield{
 		/*****************************************
 		 	Move to Perm Whitelist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'add_to_perm_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-perm-whitelist')){
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_perm_whitelist' && is_numeric($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-perm-whitelist')){
 			$cached_perm_whitelist[$_GET['iphash']] = strtotime('+30 years', current_time('timestamp'));
 			unset($cached_blacklist[$_GET['iphash']]);
 			unset($cached_whitelist[$_GET['iphash']]);
@@ -446,7 +454,7 @@ class tinyShield{
 		/*****************************************
 			Delete IP Address from Blacklist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_blacklist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-blacklist-item')){
+		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_blacklist' && is_numeric($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-blacklist-item')){
 			unset($cached_blacklist[$_GET['iphash']]);
 			update_option('tinyshield_cached_blacklist', $cached_blacklist);
 ?>
@@ -477,13 +485,29 @@ class tinyShield{
 		/*****************************************
 			Delete IP Address from Whitelist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-whitelist-item')){
+		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_whitelist' && is_numeric($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-whitelist-item')){
 			unset($cached_whitelist[$_GET['iphash']]);
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 ?>
 			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', "tinyshield");?></strong></p></div>
 <?php
 		}
+
+		if(!empty($alerts)){
+?>
+			<div class="updated"><p><strong><?php esc_attr_e($alerts);?></strong></p></div>
+<?php
+		}
+
+		if(!empty($errors)){
+?>
+			<div class="error"><p><strong><?php esc_attr_e($errors); ?></strong></p></div>
+<?php
+		}
+
+		/*****************************************
+			Options Page
+		******************************************/
 ?>
 			<div class="wrap">
 				<?php $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'log'; ?>
@@ -512,24 +536,46 @@ class tinyShield{
 					</form>
 				<?php endif; ?>
 				<?php if($active_tab == 'settings'): ?>
-					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
-						<?php
-							if(function_exists('wp_nonce_field')){
-								wp_nonce_field('update-tinyshield-options');
-							}
-						?>
-
+						<h2 class="title"><?php _e('Site Activation', 'tinyshield'); ?></h2>
 						<h3><?php _e('Activation Key', 'tinyshield'); ?></h3>
 						<p>Each site using this plugin is required to have an activation key. For a key, visit <a target="_blank" href="<?php echo esc_attr(self::$tinyshield_signup_url); ?>"><?php echo esc_attr(self::$tinyshield_signup_url); ?></a></p>
 						<p><input <?php echo ($options['site_activation_key']) ? 'type="password"' : 'type="text"' ?> name="site_activation_key" size="32" value="<?php echo esc_attr($options['site_activation_key']); ?>"></p>
 
+						<hr />
+						<h2 class="title"><?php _e('Options', 'tinyshield'); ?></h2>
 						<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
-						<p>Toggle this to enable or disable reporting failed logins to tinyShield. Enabled by default.</p>
-						<p><input type="checkbox" name="report_failed_logins" id="report_failed_logins" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins">Report Failed Logins?</label></p>
-						<div class="submit">
-							<input type="submit" class="button button-primary" name="tinyshield_save_options" value="<?php _e('Save Settings', 'tinyshield') ?>" />
-						</div>
-					</form>
+						<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+
+							<p>Toggle this to enable or disable reporting failed logins to tinyShield. Enabled by default.</p>
+							<p><input type="checkbox" name="report_failed_logins" id="report_failed_logins" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins">Report Failed Logins?</label></p>
+
+							<div class="submit">
+								<?php wp_nonce_field('update-tinyshield-options'); ?>
+								<input type="hidden" name="tinyshield_action" value="options_save" />
+								<input type="submit" class="button button-primary" name="tinyshield_save_options" value="<?php _e('Save Settings', 'tinyshield') ?>" />
+							</div>
+						</form>
+
+						<hr />
+
+						<h2 class="title"><?php _e('Diagnostics', 'tinyshield'); ?></h2>
+						<h3><?php _e('Clear Cached Blacklist', 'tinyshield'); ?></h3>
+
+						<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+							<p>Use this to clear all addresses from your local cached blacklist. Use only in case of issues.</p>
+							<?php wp_nonce_field('tinyshield-clear-local-blacklist'); ?>
+							<input type="hidden" name="tinyshield_action" value="clear_cached_blacklist" />
+							<p><input class="button button-secondary" type="submit" name="clear_cached_blacklist" id="clear_cached_blacklist" value="<?php _e('Clear Cache Blacklist', 'tinyshield'); ?>" /></p>
+						</form>
+
+						<h3><?php _e('Clear Cached Whitelist', 'tinyshield'); ?></h3>
+
+						<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+							<p>Use this to clear all addresses from your local cached whitelist. Use only in case of issues.</p>
+							<?php wp_nonce_field('tinyshield-clear-local-whitelist'); ?>
+							<input type="hidden" name="tinyshield_action" value="clear_cached_whitelist" />
+							<p><input class="button button-secondary" type="submit" name="clear_cached_whitelist" id="clear_cached_whitelist" value="<?php _e('Clear Cache Whitelist', 'tinyshield'); ?>" /></p>
+						</form>
 
 				<?php endif; ?>
 				<?php if($active_tab == 'perm-whitelist'): ?>
