@@ -523,7 +523,7 @@ class tinyShield{
 				<?php if($active_tab == 'log'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
 						<h3>Activity Log</h3>
-						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review. <strong>Current Time: <?php echo current_time('mysql'); ?></strong></p>
+						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review.</p>
 						<hr />
 					</form>
 					<?php
