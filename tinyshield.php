@@ -85,7 +85,7 @@ class tinyShield{
 			$cached_perm_whitelist = array();
 
 			$perm_whitelist_entry = new stdClass();
-			$perm_whitelist_entry->expires = strtotime('+30 years');
+			$perm_whitelist_entry->expires = strtotime('+30 years', current_time('timestamp'));
 
 			$cached_perm_whitelist[ip2long(self::get_valid_ip())] = json_encode($perm_whitelist_entry);
 			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
@@ -110,7 +110,7 @@ class tinyShield{
 			if(!empty($cached_blacklist) && array_key_exists(ip2long($ip), $cached_blacklist)){
 
 				$blacklist_data = json_decode($cached_blacklist[ip2long($ip)]);
-				$blacklist_data->last_attempt = strtotime('now');
+				$blacklist_data->last_attempt = current_time('timestamp');
 				$cached_blacklist[ip2long($ip)] = json_encode($blacklist_data);
 				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
@@ -149,8 +149,8 @@ class tinyShield{
 			self::write_log('tinyShield: Blacklist Lookup Response');
 			if(!empty($response['body'])){
 				$list_data = json_decode($response['body']);
-				$list_data->expires = strtotime('+24 hours');
-				$list_data->last_attempt = strtotime('now');
+				$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
+				$list_data->last_attempt = current_time('timestamp');
 
 				if($list_data->action == 'block'){
 					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
@@ -181,7 +181,7 @@ class tinyShield{
 
 			if(array_key_exists(ip2long($ip), $cached_whitelist)){
 				$ip_meta = json_decode($cached_whitelist[ip2long($ip)]);
-				$ip_meta->last_attempt = strtotime('now');
+				$ip_meta->last_attempt = current_time('timestamp');
 				$cached_whitelist[ip2long($ip)] = json_encode($ip_meta);
 				update_option('tinyshield_cached_whitelist', $cached_whitelist);
 
@@ -386,7 +386,7 @@ class tinyShield{
 <?php
 			}else{
 				$perm_whitelist_entry = new stdClass();
-				$perm_whitelist_entry->expires = strtotime('+30 years');
+				$perm_whitelist_entry->expires = strtotime('+30 years', current_time('timestamp'));
 
 				$cached_perm_whitelist[ip2long($_POST['perm_ip_to_whitelist'])] = json_encode($perm_whitelist_entry);
 				update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
@@ -414,7 +414,7 @@ class tinyShield{
 			$new_bl_item = json_decode($cached_whitelist[$_GET['iphash']]);
 			$new_bl_item->action = 'block';
 			$new_bl_item->date_added = time();
-			$new_bl_item->expires = strtotime('+24 hours');
+			$new_bl_item->expires = strtotime('+24 hours', current_time('timestamp'));
 
 			$cached_blacklist[$_GET['iphash']] = json_encode($new_bl_item);
 
@@ -431,7 +431,7 @@ class tinyShield{
 		 	Move to Perm Whitelist Action
 		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'add_to_perm_whitelist' && is_numeric($_GET['iphash'])&& wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-perm-whitelist')){
-			$cached_perm_whitelist[$_GET['iphash']] = strtotime('+30 years');
+			$cached_perm_whitelist[$_GET['iphash']] = strtotime('+30 years', current_time('timestamp'));
 			unset($cached_blacklist[$_GET['iphash']]);
 			unset($cached_whitelist[$_GET['iphash']]);
 
@@ -461,7 +461,7 @@ class tinyShield{
 			$new_wl_item = json_decode($cached_blacklist[$_GET['iphash']]);
 			$new_wl_item->action = 'allow';
 			$new_wl_item->date_added = time();
-			$new_wl_item->expires = strtotime('+1 hour');
+			$new_wl_item->expires = strtotime('+1 hour', current_time('timestamp'));
 
 			$cached_whitelist[$_GET['iphash']] = json_encode($new_wl_item);
 
@@ -499,7 +499,7 @@ class tinyShield{
 				<?php if($active_tab == 'log'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
 						<h3>Activity Log</h3>
-						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review.</p>
+						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review. <strong>Current Time: <?php echo current_time('mysql'); ?></strong></p>
 						<hr />
 					</form>
 					<?php
