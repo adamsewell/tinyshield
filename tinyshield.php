@@ -147,7 +147,7 @@ class tinyShield{
 
 		if(!is_wp_error($response)){
 			self::write_log('tinyShield: Blacklist Lookup Response');
-			if(!empty($response['body']) && is_object($list_data)){
+			if(!empty($response['body'])){
 				$list_data = json_decode($response['body']);
 				$list_data->expires = strtotime('+24 hours');
 				$list_data->last_attempt = strtotime('now');
@@ -161,7 +161,12 @@ class tinyShield{
 					update_option('tinyshield_cached_whitelist', $cached_whitelist);
 					return false;
 				}
+
+				return false; //default to allow in case of emergency
 			}
+		}else{
+			self::write_log('tinyShield: check_ip_blacklist error');
+			self::write_log($response->get_error_message());
 		}
 	}
 
@@ -481,7 +486,7 @@ class tinyShield{
 		}
 ?>
 			<div class="wrap">
-				<?php $active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'log'; ?>
+				<?php $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'log'; ?>
 				<h2> <?php _e('tinyShield - Simple. Focused. Security.', 'tinyshield') ?></h2>
 				<h2 class="nav-tab-wrapper">
 					<a href="?page=tinyshield.php&tab=log" class="nav-tab <?php echo $active_tab == 'log' ? 'nav-tab-active' : ''; ?>">Activity Log</a>
