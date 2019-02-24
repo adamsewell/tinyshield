@@ -148,14 +148,15 @@ class tinyShield{
 			self::write_log('tinyShield: Blacklist Lookup Response');
 			if(!empty($response['body'])){
 				$list_data = json_decode($response['body']);
-				$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 				$list_data->last_attempt = current_time('timestamp');
 
 				if($list_data->action == 'block'){
+					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
 					update_option('tinyshield_cached_blacklist', $cached_blacklist);
 					return true;
 				}elseif($list_data->action == 'allow'){
+					$list_data->expires = strtotime('+1 hour', current_time('timestamp'));
 					$cached_whitelist[ip2long($ip)] = json_encode($list_data);
 					update_option('tinyshield_cached_whitelist', $cached_whitelist);
 					return false;
