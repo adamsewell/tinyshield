@@ -9,7 +9,7 @@ tinyShield works in three parts: a whitelist, a blacklist, and a permanent white
 tinyShield reports some data from your site in order to improve our community and premium feeds. For each site that uses tinyShield, even using the community feed, will contribute back to help the other users of tinyShield. Think of it like herd immunity.
 
 ## Gain Access
-tinyShield is made up of two components - the WordPress plugin and our servers. The plugin will not function correctly without registering with our site. There is no cost for the community version of our real time blacklist. https://tinyshield.me/signup
+tinyShield is made up of two components - the WordPress plugin and our servers. The plugin will not function correctly without registering with tinyShield. There is no cost for the community version of our real time blacklist. You have the option to upgrade to our professional list and gain access to a more comprehensive blacklist.
 
 ## Privacy
 While tinyShield collects information from your site, we only collect the offending IP address, failed user login attempts, and the site the attempt was made on (as you can see from examination of the code). These items are only logged to determine patterns. No information we collect will EVER be sold or given to third parties.
