@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.1.8
+Version: 0.1.9
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
-Author: tinyElk Studios
-Author URI: https://adamsewell.me
+Author: tinyShield.me
+Author URI: https://tinyshield.me
 
 	This plugin is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
