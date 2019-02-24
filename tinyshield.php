@@ -342,14 +342,17 @@ class tinyShield{
 			'site_key_deactivated' => __('Site Key Deactivated', 'tinyshield'),
 			'settings_updated' => 'Settings Updated',
 			'blacklist_cleared' => 'Local Blacklist Has Been Cleared',
-			'whitelist_cleared' => 'Local Whitelist Has Been Cleared'
+			'whitelist_cleared' => 'Local Whitelist Has Been Cleared',
+			'reported_false_positive' => 'Your report has been logged. Thanks for reporting, we\'ll check it out!'
 		);
 
 		$error_messages = array(
 			'key_not_found' => 'Sorry, this key was not found. Please try again.',
 			'key_in_use' => __('Sorry, this site has already been activated. Please contact support.', 'tinyshield'),
 			'key_expired' => 'This key is expired. Please renew your key.',
-			'key_banned' => 'This key has been banned.'
+			'key_banned' => 'This key has been banned.',
+			'something_went_wrong' => 'Something went wrong but we\'re not sure what...',
+			'missing_registration_data' => 'You must provide your first name, last name, and email address to register your site.'
 		);
 
 		/*****************************************
@@ -373,25 +376,29 @@ class tinyShield{
 		*****************************************/
 		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'activate-site' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-activate-site')){
 
-			$registration_data = array(
-				'action' => 'activate',
-				'fname' => sanitize_text_field($_POST['activate']['fname']),
-				'lname' => sanitize_text_field($_POST['activate']['lname']),
-				'email' => sanitize_text_field($_POST['activate']['email']),
-				'association_key' => sanitize_text_field($_POST['activate']['association_key']),
-				'site' => esc_attr($_POST['activate']['site'])
-			);
+			if(!empty($_POST['activate']['fname']) && !empty($_POST['activate']['lname']) && !empty($_POST['activate']['email'])){
+				$registration_data = array(
+					'action' => 'activate',
+					'fname' => sanitize_text_field($_POST['activate']['fname']),
+					'lname' => sanitize_text_field($_POST['activate']['lname']),
+					'email' => sanitize_text_field($_POST['activate']['email']),
+					'association_key' => sanitize_text_field($_POST['activate']['association_key']),
+					'site' => esc_attr($_POST['activate']['site'])
+				);
 
+				$maybe_activate = self::activate_site($registration_data);
 
-			$maybe_activate = self::activate_site($registration_data);
-
-			if(!empty($maybe_activate) && $maybe_activate->message == 'activated'){
-				$options['site_activation_key'] = $maybe_activate->activation_key;
-				update_option('tinyshield_options', $options);
-				$alerts = $success_messages['site_key_activated'];
+				if(!empty($maybe_activate) && $maybe_activate->message == 'activated'){
+					$options['site_activation_key'] = $maybe_activate->activation_key;
+					update_option('tinyshield_options', $options);
+					$alerts = $success_messages['site_key_activated'];
+				}else{
+					$errors = $error_messages[$maybe_activate];
+				}
 			}else{
-				$errors = $error_messages[$maybe_activate];
+				$errors = $error_messages['missing_registration_data'];
 			}
+
 		}
 
 		/*****************************************
@@ -452,6 +459,12 @@ class tinyShield{
 						)
 					)
 				);
+
+				if(!is_wp_error($response) && $response['response']['code'] == 200){
+					$alerts = $success_messages['reported_false_positive'];
+				}else{
+					$errors = $error_messages['something_went_wrong'];
+				}
 			}
 		}
 
