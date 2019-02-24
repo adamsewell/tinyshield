@@ -31,8 +31,7 @@ class tinyShield{
 
 	private static $tinyshield_report_url = 'https://endpoint.tinyshield.me/report';
 	private static $tinyshield_check_url = 'https://endpoint.tinyshield.me/checkv2';
-	private static $tinyshield_signup_url = 'https://tinyshield.me/signup';
-	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activate';
+	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activatev2';
 
 	public function __construct(){
 		register_activation_hook(__FILE__, 'tinyShield::on_activation');
@@ -53,7 +52,7 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 ?>
 		<?php if(empty($options['site_activation_key'])): ?>
-			<div class="error"><p><strong><?php _e('tinyShield: This site is not registered. Before this plugin will work, you must register your site and activate the plugin using the key provided. tinyShield settings can be found under the Settings menu. <a target="_blank" href="' . esc_attr(self::$tinyshield_signup_url) . '">tinyShield Registration</a>', 'tinyshield');?></strong></p></div>
+			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . esc_attr(admin_url('options-general.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 <?php
 	}
@@ -236,27 +235,61 @@ class tinyShield{
 		}
 	}
 
-	private static function activate_site($key){
-		$response = wp_remote_post(
+	private static function activate_site($registration_data){
+		$return = wp_remote_post(
 			self::$tinyshield_activation_url,
 			array(
 				'body' => array(
-					'activating_site' => site_url(),
-					'activation_key' => esc_attr($key)
+					'fname' => $registration_data['fname'],
+					'lname' => $registration_data['lname'],
+					'email' => $registration_data['email'],
+					'association_key' => $registration_data['association_key'],
+					'site' => $registration_data['site'],
+					'action' => 'activate'
 				)
 			)
 		);
 
-		if(is_wp_error($response)){
+
+		if(is_wp_error($return) || $return['response']['code'] != 200){
 			return false;
 		}
 
-		if($response['body'] == 'activated'){
+		$response = json_decode($return['body']);
+
+		if(!empty($response->message) && $response->message == 'activated'){
+			return $response;
+		}elseif(!empty($response->message)){
+			return sanitize_text_field($response->message);
+		}else{
+			return false;
+		}
+
+	}
+
+	private static function deactivate_site($registration_data){
+		$return = wp_remote_post(
+			self::$tinyshield_activation_url,
+			array(
+				'body' => array(
+					'site' => $registration_data['site'],
+					'action' => 'deactivate',
+					'activation_key' => $registration_data['activation_key']
+				)
+			)
+		);
+
+		if(is_wp_error($return) || $return['response']['code'] != 200){
+			return false;
+		}
+
+		if($return['body'] == 'site_key_deactivated'){
 			return true;
 		}
 
-		return sanitize_text_field($response['body']);
-}
+		return sanitize_text_field($return['body']);
+
+	}
 
 	public static function log_failed_login($username){
 		$options = get_option('tinyshield_options');
@@ -290,6 +323,12 @@ class tinyShield{
 	}
 
 	public static function display_options(){
+
+		if(!current_user_can('manage_options')){
+			_e('You are not authorized to perform this operation.', 'tinyshield');
+			die();
+		}
+
 		$options = get_option('tinyshield_options');
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
@@ -299,7 +338,8 @@ class tinyShield{
 		$alerts = '';
 
 		$success_messages = array(
-			'site_key_activated' => 'Site Key Activated',
+			'site_key_activated' => __('Your site is now activated!', 'tinyshield'),
+			'site_key_deactivated' => __('Site Key Deactivated', 'tinyshield'),
 			'settings_updated' => 'Settings Updated',
 			'blacklist_cleared' => 'Local Blacklist Has Been Cleared',
 			'whitelist_cleared' => 'Local Whitelist Has Been Cleared'
@@ -307,7 +347,7 @@ class tinyShield{
 
 		$error_messages = array(
 			'key_not_found' => 'Sorry, this key was not found. Please try again.',
-			'key_in_use' => 'Sorry, this key is already in use. Please try again.',
+			'key_in_use' => __('Sorry, this site has already been activated. Please contact support.', 'tinyshield'),
 			'key_expired' => 'This key is expired. Please renew your key.',
 			'key_banned' => 'This key has been banned.'
 		);
@@ -315,33 +355,65 @@ class tinyShield{
 		/*****************************************
 				Settings Page Update
 		*****************************************/
-		if(isset($_POST['tinyshield_save_options']) && $_POST['tinyshield_action'] == 'options_save' && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-options')) {
+		if(isset($_POST['tinyshield_save_options']) && $_POST['tinyshield_action'] == 'options_save' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-update-options')) {
 
-			// Process key activations
-			if(empty($options['site_activation_key']) && isset($_POST['site_activation_key'])){
-				$maybe_activate = self::activate_site($_POST['site_activation_key']);
-
-				if(is_bool($maybe_activate) && $maybe_activate){
-					$options['site_activation_key'] = sanitize_text_field($_POST['site_activation_key']);
-					update_option('tinyshield_options', $options);
-					$alerts = $success_messages['site_key_activated'];
-
-				}else{
-					$errors = $error_messages[$maybe_activate];
-				}
-			}
-
-			// Update options
+			//failed login option
 			if(!empty($_POST['report_failed_logins']) && $_POST['report_failed_logins'] == 'on'){
 				$options['report_failed_logins'] = true;
-				$alerts = $success_messages['settings_updated'];
 			}else{
 				$options['report_failed_logins'] = false;
-				$alerts = $success_messages['settings_updated'];
 			}
 
 			update_option('tinyshield_options', $options);
+			$alerts = $success_messages['settings_updated'];
+		}
 
+		/*****************************************
+			Handle activating site
+		*****************************************/
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'activate-site' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-activate-site')){
+
+			$registration_data = array(
+				'action' => 'activate',
+				'fname' => sanitize_text_field($_POST['activate']['fname']),
+				'lname' => sanitize_text_field($_POST['activate']['lname']),
+				'email' => sanitize_text_field($_POST['activate']['email']),
+				'association_key' => sanitize_text_field($_POST['activate']['association_key']),
+				'site' => esc_attr($_POST['activate']['site'])
+			);
+
+
+			$maybe_activate = self::activate_site($registration_data);
+
+			if(!empty($maybe_activate) && $maybe_activate->message == 'activated'){
+				$options['site_activation_key'] = $maybe_activate->activation_key;
+				update_option('tinyshield_options', $options);
+				$alerts = $success_messages['site_key_activated'];
+			}else{
+				$errors = $error_messages[$maybe_activate];
+			}
+		}
+
+		/*****************************************
+			Handle deactivating site
+		*****************************************/
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'deactivate-site' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-deactivate-site')){
+			$registration_data = array(
+				'action' => 'deactivate',
+				'site' => esc_attr(site_url()),
+				'activation_key' => $options['site_activation_key']
+			);
+
+			$maybe_deactivate = self::deactivate_site($registration_data);
+
+			if(is_bool($maybe_deactivate) && $maybe_deactivate){
+				$options['site_activation_key'] = '';
+				update_option('tinyshield_options', $options);
+				$alerts = $success_messages['site_key_deactivated'];
+
+			}else{
+				$errors = $error_messages[$maybe_deactivate];
+			}
 		}
 
 		/*****************************************
@@ -521,7 +593,7 @@ class tinyShield{
 				</h2>
 
 				<?php if($active_tab == 'log'): ?>
-					<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+					<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
 						<h3>Activity Log</h3>
 						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review.</p>
 						<hr />
@@ -538,19 +610,44 @@ class tinyShield{
 				<?php if($active_tab == 'settings'): ?>
 						<h2 class="title"><?php _e('Site Activation', 'tinyshield'); ?></h2>
 						<h3><?php _e('Activation Key', 'tinyshield'); ?></h3>
-						<p>Each site using this plugin is required to have an activation key. For a key, visit <a target="_blank" href="<?php echo esc_attr(self::$tinyshield_signup_url); ?>"><?php echo esc_attr(self::$tinyshield_signup_url); ?></a></p>
-						<p><input <?php echo ($options['site_activation_key']) ? 'type="password"' : 'type="text"' ?> name="site_activation_key" size="32" value="<?php echo esc_attr($options['site_activation_key']); ?>"></p>
+
+						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+							<p>
+								<?php if(empty($options['site_activation_key'])): ?>
+									<p>Before we can help protect your site, you must register and activate your site with tinyShield.</p>
+									<?php wp_nonce_field('tinyshield-activate-site'); ?>
+									<input type="hidden" name="tinyshield_action" value="activate-site" />
+
+									<p>
+										<input size="28" type="text" placeholder="<?php _e('Contact First Name', 'tinyshield'); ?>" name="activate[fname]" value="" />
+										<input size="28" type="text" placeholder="<?php _e('Contact Last Name', 'tinyshield'); ?>" name="activate[lname]" value="" />
+									</p>
+									<p><input size="56" type="text" placeholder="<?php _e('Contact Email Address', 'tinyshield'); ?>" name="activate[email]" value="" /></p>
+									<p><input size="56" type="text" placeholder="<?php _e('Site Association Key (For Agencies or Multiple Sites)', 'tinyshield'); ?>" name="activate[association_key]" value="" /></p>
+
+									<input type="hidden" name="activate[site]" value="<?php esc_attr_e(site_url()); ?>" />
+									<p><input class="button button-primary" type="submit" name="activate-site" id="activate-site" value="<?php _e('Activate This Site', 'tinyshield'); ?>" /></p>
+								<?php else: ?>
+									<p><input type="text" size="56" value="<?php _e('Your Site is Currently Activated with tinyShield'); ?>" disabled /> 😎 </p>
+									<?php wp_nonce_field('tinyshield-deactivate-site'); ?>
+									<input type="hidden" name="tinyshield_action" value="deactivate-site" />
+									<p><input class="button button-secondary" type="submit" name="deactivate-site" id="deactivate-site" value="<?php _e('Deactivate This Site', 'tinyshield'); ?>" /></p>
+
+								<?php endif; ?>
+							</p>
+						</form>
 
 						<hr />
+
 						<h2 class="title"><?php _e('Options', 'tinyshield'); ?></h2>
 						<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
-						<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
 
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. Enabled by default.</p>
 							<p><input type="checkbox" name="report_failed_logins" id="report_failed_logins" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins">Report Failed Logins?</label></p>
 
 							<div class="submit">
-								<?php wp_nonce_field('update-tinyshield-options'); ?>
+								<?php wp_nonce_field('tinyshield-update-options'); ?>
 								<input type="hidden" name="tinyshield_action" value="options_save" />
 								<input type="submit" class="button button-primary" name="tinyshield_save_options" value="<?php _e('Save Settings', 'tinyshield') ?>" />
 							</div>
@@ -561,7 +658,7 @@ class tinyShield{
 						<h2 class="title"><?php _e('Diagnostics', 'tinyshield'); ?></h2>
 						<h3><?php _e('Clear Cached Blacklist', 'tinyshield'); ?></h3>
 
-						<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
 							<p>Use this to clear all addresses from your local cached blacklist. Use only in case of issues.</p>
 							<?php wp_nonce_field('tinyshield-clear-local-blacklist'); ?>
 							<input type="hidden" name="tinyshield_action" value="clear_cached_blacklist" />
@@ -570,7 +667,7 @@ class tinyShield{
 
 						<h3><?php _e('Clear Cached Whitelist', 'tinyshield'); ?></h3>
 
-						<form method="post" action="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>">
+						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
 							<p>Use this to clear all addresses from your local cached whitelist. Use only in case of issues.</p>
 							<?php wp_nonce_field('tinyshield-clear-local-whitelist'); ?>
 							<input type="hidden" name="tinyshield_action" value="clear_cached_whitelist" />
