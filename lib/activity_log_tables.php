@@ -100,8 +100,8 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
           'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
 					'iphash' => long2ip($iphash),
           'isp' => $iphash_data->geo_ip->isp,
-          'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires),
-          'last_attempt' => (!empty($iphash_data->last_attempt) ? date_i18n(get_option('date_format'), $iphash_data->last_attempt) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->last_attempt) : ''),
+          'expires' => $iphash_data->expires,
+          'last_attempt' => $iphash_data->last_attempt,
           'rdns' => $iphash_data->rdns
 				);
 			}
@@ -114,6 +114,16 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
     $last_attempt = array_column($data, 'last_attempt');
 
     array_multisort($$orderby, $order, $data);
+
+    //format the date now that we're sorted
+    foreach($data as &$data_entry){
+      if($data_entry['last_attempt']){
+        $data_entry['last_attempt'] = date_i18n(get_option('date_format'), $data_entry['last_attempt']) . ' at ' . date_i18n(get_option('time_format'), $data_entry['last_attempt']);
+      }
+      if($data_entry['expires']){
+        $data_entry['expires'] = date_i18n(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires);
+      }
+    }
 
 		$current_page = $this->get_pagenum();
 
