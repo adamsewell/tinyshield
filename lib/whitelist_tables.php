@@ -95,8 +95,8 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
         $iphash_data = json_decode($iphash_data);
 				$data[] = array(
 					'iphash' => long2ip($iphash),
-          'expires' => date(get_option('date_format'), $iphash_data->expires) . ' at ' . date(get_option('time_format'), $iphash_data->expires),
-          'last_attempt' => (!empty($iphash_data->last_attempt) ? date(get_option('date_format'), $iphash_data->last_attempt) . ' at ' . date(get_option('time_format'), $iphash_data->last_attempt) : ''),
+          'expires' => $iphash_data->expires,
+          'last_attempt' => $iphash_data->last_attempt,
           'origin' => (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
           'isp' => $iphash_data->geo_ip->isp,
           'rdns' => $iphash_data->rdns
@@ -111,6 +111,16 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
     $expires = array_column($data, 'expires');
 
     array_multisort($$orderby, $order, $data);
+
+    //format the date now that we're sorted
+    foreach($data as &$data_entry){
+      if($data_entry['last_attempt']){
+        $data_entry['last_attempt'] = date_i18n(get_option('date_format'), $data_entry['last_attempt']) . ' at ' . date_i18n(get_option('time_format'), $data_entry['last_attempt']);
+      }
+      if($data_entry['expires']){
+        $data_entry['expires'] = date_i18n(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires);
+      }
+    }
 
 		$current_page = $this->get_pagenum();
 
