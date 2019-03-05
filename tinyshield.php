@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.2.0
+Version: 0.2.1
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -70,12 +70,13 @@ class tinyShield{
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
 		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
 
-		if(!is_array($options)){
-			$options = array();
-			$options['report_failed_logins'] = true;
-			$options['block_top_countries'] =  false;
-			update_option('tinyshield_options', $options);
-		}
+		//check options exist, if not set to defaults
+		$default_options = array(
+			'report_failed_logins' => true,
+			'block_top_countries' => false
+		);
+		$merged_options = $options + $default_options;
+		update_option('tinyshield_options', $merged_options);
 
 		if(!is_array($cached_blacklist)){
 			$cached_blacklist = array();
@@ -375,7 +376,7 @@ class tinyShield{
 						$options[$key] = filter_var($_POST['options'][$key], FILTER_VALIDATE_BOOLEAN);
 					}elseif(is_bool($value) && $value){
 						$options[$key] = false;
-					}elseif(is_null($value)){ //this should never occur but if it does...
+					}elseif(is_null($value)){
 						$options[$key] = false;
 					}
 				}
