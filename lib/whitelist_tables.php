@@ -44,7 +44,7 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
     //Return the title contents
     return sprintf('%1$s %3$s',
         /*$1%s*/ $item['iphash'],
-        /*$2%s*/ $item['expires'],
+        /*$2%s*/ $item['last_attempt'],
         /*$3%s*/ $this->row_actions($actions)
     );
 	}
@@ -60,8 +60,7 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
         'rdns' => 'Hostname',
         'isp' => 'ISP',
         'origin' => 'Location',
-        'last_attempt' => 'Last Attempt',
-  			'expires' => 'Expires'
+        'last_attempt' => 'Last Access'
   		);
 
 		return $columns;
@@ -70,7 +69,7 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
 	function get_sortable_columns() {
 		$sortable_columns = array(
 				'iphash'     => array('iphash', false),     //true means it's already sorted
-				'expires'    => array('expires', false),
+				'last_attempt'    => array('last_attempt', false),
 		);
 		return $sortable_columns;
 	}
@@ -95,7 +94,6 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
         $iphash_data = json_decode($iphash_data);
 				$data[] = array(
 					'iphash' => long2ip($iphash),
-          'expires' => $iphash_data->expires,
           'last_attempt' => $iphash_data->last_attempt,
           'origin' => (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
           'isp' => $iphash_data->geo_ip->isp,
@@ -104,11 +102,11 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
 			}
     }
 
-		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'expires'; //If no sort, default to title
+		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'last_attempt'; //If no sort, default to title
 		$order = (isset($_GET['order']) && $_GET['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
 
     $iphash = array_column($data, 'iphash');
-    $expires = array_column($data, 'expires');
+    $last_attempt = array_column($data, 'last_attempt');
 
     array_multisort($$orderby, $order, $data);
 
@@ -116,9 +114,6 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
     foreach($data as &$data_entry){
       if($data_entry['last_attempt']){
         $data_entry['last_attempt'] = date_i18n(get_option('date_format'), $data_entry['last_attempt']) . ' at ' . date_i18n(get_option('time_format'), $data_entry['last_attempt']);
-      }
-      if($data_entry['expires']){
-        $data_entry['expires'] = date_i18n(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires);
       }
     }
 

@@ -60,8 +60,8 @@ class tinyShield_BlackList_Table extends WP_List_Table{
       'rdns' => 'Hostname',
       'isp' => 'ISP',
       'origin' => 'Location',
-      'last_attempt' => 'Last Attempt',
-			'expires' => 'Expires'
+			'expires' => 'Expires',
+      'last_attempt' => 'Last Access'
 		);
 
 		return $columns;

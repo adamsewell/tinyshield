@@ -57,8 +57,8 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
         'isp' => 'ISP',
         'origin' => 'Location',
         'action' => 'Action',
-        'last_attempt' => 'Last Access',
-  			'expires' => 'Expires'
+  			'expires' => 'Expires',
+        'last_attempt' => 'Last Access'
   		);
 
 		return $columns;
