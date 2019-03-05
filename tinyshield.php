@@ -678,8 +678,8 @@ class tinyShield{
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
-							<h3><?php _e('Block Top Spamming Countries', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable the blocking of top spamming countries. The list includes, but is not limited to China, Russia, Turkey, India, Pakistan, Romania and others. Adheres to permanent whitelist. <strong>Disabled by default.</strong></p>
+							<h3><?php _e('Block Top Attacking Countries', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable the blocking of top attacking countries. The list includes, but is not limited to China, Russia, Turkey, India, Pakistan, Romania and others. Adheres to permanent whitelist. <strong>Disabled by default.</strong></p>
 							<p><input type="checkbox" name="options[block_top_countries]" id="options[block_top_countries]" <?php echo ($options['block_top_countries']) ? 'checked' : 'unchecked' ?> /> <label for="block_top_countries"><?php _e('Block Top Countries?', 'tinyshield'); ?></label></p>
 
 							<div class="submit">
