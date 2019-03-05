@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.1.9
+Version: 0.2.0
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -31,6 +31,7 @@ class tinyShield{
 
 	private static $tinyshield_report_url = 'https://endpoint.tinyshield.me/report';
 	private static $tinyshield_check_url = 'https://endpoint.tinyshield.me/checkv2';
+	private static $tinyshield_upgrade_url = 'https://tinyshield.me/upgrade-my-site/';
 	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activatev2';
 
 	public function __construct(){
@@ -44,7 +45,7 @@ class tinyShield{
 		add_filter('wp_login_failed', 'tinyShield::log_failed_login');
 
 		//hook into the redirect_canonical filter to detect user enumeration
-		//add_filter('redirect_canonical', 'tinyShield::log_user_enumeration', 10, 2);
+		//add_action('request', 'tinyShield::log_block_user_enumeration');
 
 	}
 
@@ -72,6 +73,7 @@ class tinyShield{
 		if(!is_array($options)){
 			$options = array();
 			$options['report_failed_logins'] = true;
+			$options['block_top_countries'] =  false;
 			update_option('tinyshield_options', $options);
 		}
 
@@ -115,21 +117,23 @@ class tinyShield{
 
 				self::write_log('tinyShield: Blocked Local Blacklisted IP: ' . $ip);
 
-				header('HTTP/1.0 403 Forbidden');
+				status_header(403);
+				nocache_headers();
 				exit;
 			}
 
 			//if not in cache, remote lookup
-			if(self::check_ip_blacklist($ip)){
-				self::write_log('tinyShield: Blocked Remote Lookup Blacklisted IP: ' . $ip);
+			if(self::check_ip($ip)){
+				self::write_log('tinyShield: Remote Lookup Blacklisted IP: ' . $ip);
 
-				header('HTTP/1.0 403 Forbidden');
+				status_header(403);
+				nocache_headers();
 				exit;
 			}
 		}
 	}
 
-	private static function check_ip_blacklist($ip){
+	private static function check_ip($ip){
 		$options = get_option('tinyshield_options');
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
@@ -139,7 +143,8 @@ class tinyShield{
 			array(
 				'body' => array(
 					'activation_key' => urlencode($options['site_activation_key']),
-					'requesting_site' => urlencode(site_url())
+					'requesting_site' => urlencode(site_url()),
+					'block_top_countries' => urlencode($options['block_top_countries'])
 				)
 			)
 		);
@@ -149,7 +154,6 @@ class tinyShield{
 			if(!empty($response['body'])){
 				$list_data = json_decode($response['body']);
 				$list_data->last_attempt = current_time('timestamp');
-
 				if($list_data->action == 'block'){
 					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
@@ -165,7 +169,7 @@ class tinyShield{
 				return false; //default to allow in case of emergency
 			}
 		}else{
-			self::write_log('tinyShield: check_ip_blacklist error');
+			self::write_log('tinyShield: check_ip error');
 			self::write_log($response->get_error_message());
 		}
 	}
@@ -314,12 +318,14 @@ class tinyShield{
 		}
 	}
 
-	public static function log_user_enumeration($redirect, $request){
-		$remote_ip = self::get_valid_ip();
+	public static function log_block_user_enumeration($query){
+		if(!is_admin()){
+			$remote_ip = self::get_valid_ip();
 
-		if(preg_match('/\?author=([0-9]*)(\/*)/i', $request)){
-			var_dump($request);
-			die();
+			if(preg_match('/\?author=([0-9]*)(\/*)/i', $request)){
+				var_dump($request);
+				die();
+			}
 		}
 	}
 
@@ -348,7 +354,7 @@ class tinyShield{
 		);
 
 		$error_messages = array(
-			'key_not_found' => 'Sorry, this key was not found. Please try again.',
+			'key_not_found' => __('Sorry, this key was not found. Please try again.', 'tinyshield'),
 			'key_in_use' => __('Sorry, this site has already been activated. Please contact support.', 'tinyshield'),
 			'key_expired' => 'This key is expired. Please renew your key.',
 			'key_banned' => 'This key has been banned.',
@@ -360,12 +366,16 @@ class tinyShield{
 				Settings Page Update
 		*****************************************/
 		if(isset($_POST['tinyshield_save_options']) && $_POST['tinyshield_action'] == 'options_save' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-update-options')) {
-
-			//failed login option
-			if(!empty($_POST['report_failed_logins']) && $_POST['report_failed_logins'] == 'on'){
-				$options['report_failed_logins'] = true;
-			}else{
-				$options['report_failed_logins'] = false;
+			if(is_array($_POST['options']) && !empty($_POST['options'])){
+				foreach($options as $key => $value){
+					if(array_key_exists($key, $_POST['options'])){
+						$options[$key] = filter_var($_POST['options'][$key], FILTER_VALIDATE_BOOLEAN);
+					}elseif(is_bool($value) && $value){
+						$options[$key] = false;
+					}elseif(is_null($value)){ //this should never occur but if it does...
+						$options[$key] = false;
+					}
+				}
 			}
 
 			update_option('tinyshield_options', $options);
@@ -651,14 +661,23 @@ class tinyShield{
 							</p>
 						</form>
 
+						<?php if(empty($options['site_professional_key']) && !empty($options['site_activation_key'])): ?>
+							<h3><?php _e('Upgrade To Professional', 'tinyshield'); ?></h3>
+									<p><?php _e('Gain access to the most comprehensive blacklist and whitelist feeds we have to offer by signing up for our Professional service. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites.', 'tinyshield'); ?></p>
+									<p><a target="_blank" href="<?php esc_attr_e(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Upgrade This Site', 'tinyshield'); ?></a></p>
+						<?php endif; ?>
+
 						<hr />
 
 						<h2 class="title"><?php _e('Options', 'tinyshield'); ?></h2>
-						<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
+							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
-							<p>Toggle this to enable or disable reporting failed logins to tinyShield. Enabled by default.</p>
-							<p><input type="checkbox" name="report_failed_logins" id="report_failed_logins" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins">Report Failed Logins?</label></p>
+							<h3><?php _e('Block Top Spamming Countries', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable the blocking of top spamming countries. The list includes, but is not limited to China, Russia, Turkey, India, Pakistan, Romania and others. Adheres to permanent whitelist. <strong>Disabled by default.</strong></p>
+							<p><input type="checkbox" name="options[block_top_countries]" id="options[block_top_countries]" <?php echo ($options['block_top_countries']) ? 'checked' : 'unchecked' ?> /> <label for="block_top_countries"><?php _e('Block Top Countries?', 'tinyshield'); ?></label></p>
 
 							<div class="submit">
 								<?php wp_nonce_field('tinyshield-update-options'); ?>
