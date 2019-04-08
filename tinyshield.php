@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.2.1
+Version: 0.2.2
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -64,19 +64,23 @@ class tinyShield{
 		}
 	}
 
-	public function on_activation(){
+	public static function on_activation(){
 		$options = get_option('tinyshield_options');
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
 		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
 
-		//check options exist, if not set to defaults
 		$default_options = array(
 			'report_failed_logins' => true,
 			'block_top_countries' => false
 		);
-		$merged_options = $options + $default_options;
-		update_option('tinyshield_options', $merged_options);
+
+		if(empty($options)){
+			update_option('tinyshield_options', $default_options);
+		}else{
+			$merged_options = $options + $default_options;
+			update_option('tinyshield_options', $merged_options);
+		}
 
 		if(!is_array($cached_blacklist)){
 			$cached_blacklist = array();
@@ -123,7 +127,7 @@ class tinyShield{
 				exit;
 			}
 
-			//if not in cache, remote lookup
+			//if not cached, remote lookup
 			if(self::check_ip($ip)){
 				self::write_log('tinyShield: Remote Lookup Blacklisted IP: ' . $ip);
 
@@ -486,22 +490,29 @@ class tinyShield{
 		/*****************************************
 			Add Custom IP to Permanent Whitelist Action
 		******************************************/
-		if(isset($_POST['tinyshield_perm_whitelist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-whitelist')){
+		if(isset($_POST['tinyshield_perm_whitelist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-whitelist') && !empty($_POST['perm_ip_to_whitelist'])){
+				$ips = array_filter(array_map('trim', explode("\n", $_POST['perm_ip_to_whitelist'])));
 
-			if(empty($_POST['perm_ip_to_whitelist']) || !filter_var($_POST['perm_ip_to_whitelist'], FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
-?>
-				<div class="error"><p><strong><?php _e('Please enter a valid IP address.', "tinyshield");?></strong></p></div>
-<?php
-			}else{
-				$perm_whitelist_entry = new stdClass();
-				$perm_whitelist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+				foreach($ips as $ip){
+					if(!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
+						$perm_whitelist_entry = new stdClass();
+						$perm_whitelist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+						$cached_perm_whitelist[ip2long($ip)] = json_encode($perm_whitelist_entry);
+					}else{
+						$invalid_ip = true;
+					}
+				}
 
-				$cached_perm_whitelist[ip2long($_POST['perm_ip_to_whitelist'])] = json_encode($perm_whitelist_entry);
-				update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
+				if($invalid_ip){
 ?>
-				<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Whitelist', "tinyshield");?></strong></p></div>
+					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', "tinyshield");?></strong></p></div>
 <?php
-			}
+				}else{
+					update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
+?>
+					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Whitelist', "tinyshield");?></strong></p></div>
+<?php
+				}
 		}
 
 		/*****************************************
@@ -713,7 +724,7 @@ class tinyShield{
 
 				<?php endif; ?>
 				<?php if($active_tab == 'perm-whitelist'): ?>
-					<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+					<form method="post" action="<?php echo esc_url(remove_query_arg(array('action', '_wpnonce', 'iphash'), $_SERVER['REQUEST_URI'])); ?>">
 						<?php
 							if(function_exists('wp_nonce_field')){
 								wp_nonce_field('update-tinyshield-perm-whitelist');
@@ -723,7 +734,13 @@ class tinyShield{
 						<h3>Permanent Whitelist</h3>
 						<p>These are addresses that are permanently allowed to access the site even if they are found in a black list. This is useful for false positives. The permanent whitelist is checked before any other check is performed.</p>
 						<hr />
-						<p><input type="text" name="perm_ip_to_whitelist" size="36" placeholder="<?php _e('Enter a valid single IP Address...', 'tinyshield'); ?>" value=""> <input type="submit" class="button button-primary" name="tinyshield_perm_whitelist_update" value="<?php _e('Save Whitelist', 'tinyshield') ?>" /></p>
+						<p>
+							<!-- <input type="text" name="perm_ip_to_whitelist" size="36" placeholder="<?php _e('Enter a valid single IP Address...', 'tinyshield'); ?>" value=""> -->
+							<textarea name="perm_ip_to_whitelist" rows="5" cols="60" placeholder="<?php _e('Enter a single or multiple IP addresses. One address per line.', 'tinyshield'); ?>"></textarea>
+						</p>
+						<p>
+							<input type="submit" class="button button-primary" name="tinyshield_perm_whitelist_update" value="<?php _e('Add to Whitelist', 'tinyshield') ?>" />
+						</p>
 					</form>
 					<?php
 						$tinyShield_PermWhiteList_Table = new tinyShield_PermWhiteList_Table();
