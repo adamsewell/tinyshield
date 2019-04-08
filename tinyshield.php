@@ -156,6 +156,8 @@ class tinyShield{
 
 		if(!is_wp_error($response)){
 			self::write_log('tinyShield: Blacklist Lookup Response');
+			self::write_log($response);
+			
 			if(!empty($response['body'])){
 
 				$list_data = json_decode($response['body']);
