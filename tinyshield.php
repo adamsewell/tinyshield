@@ -491,7 +491,7 @@ class tinyShield{
 			Add Custom IP to Permanent Whitelist Action
 		******************************************/
 		if(isset($_POST['tinyshield_perm_whitelist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-whitelist') && !empty($_POST['perm_ip_to_whitelist'])){
-				$ips = array_filter(array_map('trim', explode("\n", $_POST['perm_ip_to_whitelist'])));
+				$ips = array_filter(array_map('trim', explode("\r\n", $_POST['perm_ip_to_whitelist'])));
 
 				foreach($ips as $ip){
 					if(!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
