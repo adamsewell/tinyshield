@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.2.2
+Version: 0.2.3
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -108,8 +108,8 @@ class tinyShield{
 
 		self::clean_up_lists();
 
-		//check if valid ip and check the local whitelist
-		if($ip && !self::check_ip_whitelist($ip)){
+		//check if valid ip and check the local whitelist but only if visitor is not logged in
+		if(!is_user_logged_in() && $ip && !self::check_ip_whitelist($ip)){
 			$cached_blacklist = get_option('tinyshield_cached_blacklist');
 
 			//check local cached ips
@@ -157,7 +157,7 @@ class tinyShield{
 		if(!is_wp_error($response)){
 			self::write_log('tinyShield: Blacklist Lookup Response');
 			self::write_log($response);
-			
+
 			if(!empty($response['body'])){
 
 				$list_data = json_decode($response['body']);
