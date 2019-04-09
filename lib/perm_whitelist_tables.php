@@ -52,7 +52,7 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 		$columns = array(
 			'cb' => '<input type="checkbox" />',
 			'iphash' => 'IP Address',
-			'expires' => 'Expires'
+			'date_added' => 'Date Added'
 		);
 
 		return $columns;
@@ -61,7 +61,7 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 	function get_sortable_columns() {
 		$sortable_columns = array(
 				'iphash'     => array('iphash', false),     //true means it's already sorted
-				'expires'    => array('expires', false),
+				'date_added'    => array('date_added', false),
 		);
 		return $sortable_columns;
 	}
@@ -86,18 +86,24 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
         $meta = json_decode($meta);
 				$data[] = array(
 					'iphash' => long2ip($iphash),
-          'expires' => date(get_option('date_format'), $meta->expires) . ' at ' . date(get_option('time_format'), $meta->expires)
+          'date_added' => $meta->expires
 				);
 			}
     }
 
-		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'expires'; //If no sort, default to title
+		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'date_added'; //If no sort, default to title
 		$order = (isset($_GET['order']) && $_GET['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
 
     $iphash = array_column($data, 'iphash');
-    $expires = array_column($data, 'expires');
+    $date_added = array_column($data, 'date_added');
 
     array_multisort($$orderby, $order, $data);
+
+    foreach($data as &$data_entry){
+      if($data_entry['date_added']){
+        $data_entry['date_added'] = date(get_option('date_format'), strtotime('-30 years', $data_entry['date_added'])) . ' at ' . date(get_option('time_format'), strtotime('-30 years', $data_entry['date_added']));
+      }
+    }
 
 		$current_page = $this->get_pagenum();
 
