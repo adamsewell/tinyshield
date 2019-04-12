@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.2.3
+Version: 0.2.4
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -39,7 +39,12 @@ class tinyShield{
 
 		add_action('admin_menu', 'tinyShield::add_menu');
 		add_action('admin_notices', 'tinyShield::notices');
-		add_action('plugins_loaded', 'tinyShield::maybe_block', 0);
+
+		//hook to process incoming connections
+		add_action('plugins_loaded', 'tinyShield::incoming_maybe_block', 0);
+
+		//hook to process outgoing connections through the WordPress API
+		add_filter('pre_http_request', 'tinyShield::outgoing_maybe_block', 10, 3);
 
 		//hook into the failed login attempts and report back
 		add_filter('wp_login_failed', 'tinyShield::log_failed_login');
@@ -103,13 +108,52 @@ class tinyShield{
 		}
 	}
 
-	public static function maybe_block(){
+	public static function outgoing_maybe_block($pre, $args, $url){
+
+		if(empty($url) || !$host = parse_url($url, PHP_URL_HOST)){
+			return $pre;
+		}
+
+		//bypass our domain
+		$whitelisted_domains = array(
+			'endpoint.tinyshield.me',
+			'api.wordpress.org'
+		);
+
+		if(in_array($host, $whitelisted_domains)){
+			return $pre;
+		}
+
+		$ip = gethostbyname($host);
+		$cached_blacklist = get_option('tinyshield_cached_blacklist');
+
+		if(!empty($cached_blacklist) && array_key_exists(ip2long($ip), $cached_blacklist)){
+			$blacklist_data = json_decode($cached_blacklist[ip2long($ip)]);
+			$blacklist_data->last_attempt = current_time('timestamp');
+
+			$cached_blacklist[ip2long($ip)] = json_encode($blacklist_data);
+			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+
+			return true;
+		}
+
+		if($result = self::check_ip($ip, 'outbound', $host)){
+			self::write_log('tinyShield: outbound remote blacklist lookup: ' . $ip);
+
+			return true;
+		}
+
+
+		return $pre;
+	}
+
+	public static function incoming_maybe_block(){
 		$ip = self::get_valid_ip();
 
 		self::clean_up_lists();
 
-		//check if valid ip and check the local whitelist but only if visitor is not logged in
-		if(!is_user_logged_in() && $ip && !self::check_ip_whitelist($ip)){
+		//check if valid ip and check the local whitelist
+		if($ip && !self::check_ip_whitelist($ip) && !is_user_logged_in()){
 			$cached_blacklist = get_option('tinyshield_cached_blacklist');
 
 			//check local cached ips
@@ -120,7 +164,7 @@ class tinyShield{
 				$cached_blacklist[ip2long($ip)] = json_encode($blacklist_data);
 				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
-				self::write_log('tinyShield: Blocked Local Blacklisted IP: ' . $ip);
+				self::write_log('tinyShield: ip blocked from local cached blacklist: ' . $ip);
 
 				status_header(403);
 				nocache_headers();
@@ -129,7 +173,7 @@ class tinyShield{
 
 			//if not cached, remote lookup
 			if(self::check_ip($ip)){
-				self::write_log('tinyShield: Remote Lookup Blacklisted IP: ' . $ip);
+				self::write_log('tinyShield: incoming remote blacklist lookup: ' . $ip);
 
 				status_header(403);
 				nocache_headers();
@@ -138,7 +182,7 @@ class tinyShield{
 		}
 	}
 
-	private static function check_ip($ip){
+	private static function check_ip($ip, $direction = 'inbound', $domain = ''){
 		$options = get_option('tinyshield_options');
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
@@ -154,22 +198,34 @@ class tinyShield{
 			)
 		);
 
+		$response_code = wp_remote_retrieve_response_code($response);
+		$response_body = wp_remote_retrieve_body($response);
+
 		if(!is_wp_error($response)){
-			self::write_log('tinyShield: Blacklist Lookup Response');
-			self::write_log($response);
+			self::write_log('tinyShield: blacklist lookup response');
+			self::write_log($response_body);
+			self::write_log($response_code);
 
-			if(!empty($response['body'])){
+			if(!empty($response_body)){
 
-				$list_data = json_decode($response['body']);
+				$list_data = json_decode($response_body);
 				$list_data->last_attempt = current_time('timestamp');
 
 				if($list_data->action == 'block'){
 					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
+					$list_data->direction = $direction;
+					if($domain){
+						$list_data->called_domain = $domain;
+					}
 					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
 					update_option('tinyshield_cached_blacklist', $cached_blacklist);
 					return true;
 				}elseif($list_data->action == 'allow'){
 					$list_data->expires = strtotime('+1 hour', current_time('timestamp'));
+					$list_data->direction = $direction;
+					if($domain){
+						$list_data->called_domain = $domain;
+					}
 					$cached_whitelist[ip2long($ip)] = json_encode($list_data);
 
 					update_option('tinyshield_cached_whitelist', $cached_whitelist);
@@ -266,11 +322,11 @@ class tinyShield{
 		);
 
 
-		if(is_wp_error($return) || $return['response']['code'] != 200){
+		if(is_wp_error($return) || wp_remote_retrieve_response_code($return) != 200){
 			return false;
 		}
 
-		$response = json_decode($return['body']);
+		$response = json_decode(wp_remote_retrieve_body($return));
 
 		if(!empty($response->message) && $response->message == 'activated'){
 			return $response;
@@ -294,15 +350,15 @@ class tinyShield{
 			)
 		);
 
-		if(is_wp_error($return) || $return['response']['code'] != 200){
+		if(is_wp_error($return) || wp_remote_retrieve_response_code($return) != 200){
 			return false;
 		}
 
-		if($return['body'] == 'site_key_deactivated'){
+		if(wp_remote_retrieve_body($return) == 'site_key_deactivated'){
 			return true;
 		}
 
-		return sanitize_text_field($return['body']);
+		return sanitize_text_field(wp_remote_retrieve_body($return));
 
 	}
 
@@ -481,7 +537,7 @@ class tinyShield{
 					)
 				);
 
-				if(!is_wp_error($response) && $response['response']['code'] == 200){
+				if(!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200){
 					$alerts = $success_messages['reported_false_positive'];
 				}else{
 					$errors = $error_messages['something_went_wrong'];

@@ -40,7 +40,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
     //Return the title contents
     return sprintf('%1$s %3$s',
         /*$1%s*/ $item['iphash'],
-        /*$2%s*/ $item['expires'],
+        /*$2%s*/ $item['last_attempt'],
         /*$3%s*/ $this->row_actions($actions)
     );
 	}
@@ -57,7 +57,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
         'isp' => 'ISP',
         'origin' => 'Location',
         'action' => 'Action',
-  			'expires' => 'Expires',
+  			'direction' => 'Direction',
         'last_attempt' => 'Last Access'
   		);
 
@@ -78,6 +78,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
     $cached_whitelist = get_option('tinyshield_cached_whitelist');
     $cached_blacklist = get_option('tinyshield_cached_blacklist');
     $action_messages = array('allow' => '✅', 'block' => '⛔');
+    $direction_icons = array('outbound' => 'Outbound', 'inbound' => 'Inbound');
 
 		$per_page = 25;
 
@@ -100,9 +101,9 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
           'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
 					'iphash' => long2ip($iphash),
           'isp' => $iphash_data->geo_ip->isp,
-          'expires' => $iphash_data->expires,
+          'direction' => $direction_icons[$iphash_data->direction],
           'last_attempt' => $iphash_data->last_attempt,
-          'rdns' => $iphash_data->rdns
+          'rdns' => (!empty($iphash_data->called_domain) ? $iphash_data->called_domain : $iphash_data->rdns)
 				);
 			}
     }
@@ -119,9 +120,6 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
     foreach($data as &$data_entry){
       if($data_entry['last_attempt']){
         $data_entry['last_attempt'] = date_i18n(get_option('date_format'), $data_entry['last_attempt']) . ' at ' . date_i18n(get_option('time_format'), $data_entry['last_attempt']);
-      }
-      if($data_entry['expires']){
-        $data_entry['expires'] = date_i18n(get_option('date_format'), $iphash_data->expires) . ' at ' . date_i18n(get_option('time_format'), $iphash_data->expires);
       }
     }
 
