@@ -117,7 +117,8 @@ class tinyShield{
 		//bypass our domain
 		$whitelisted_domains = array(
 			'endpoint.tinyshield.me',
-			'api.wordpress.org'
+			'api.wordpress.org',
+			parse_url(get_bloginfo('url'), PHP_URL_HOST)			
 		);
 
 		if(in_array($host, $whitelisted_domains)){
