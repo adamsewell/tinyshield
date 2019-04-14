@@ -41,7 +41,7 @@ class tinyShield{
 		add_action('admin_notices', 'tinyShield::notices');
 
 		//hook to process incoming connections
-		add_action('plugins_loaded', 'tinyShield::incoming_maybe_block', 0);
+		add_action('plugins_loaded', 'tinyShield::on_plugins_loaded', 0);
 
 		//hook to process outgoing connections through the WordPress API
 		add_filter('pre_http_request', 'tinyShield::outgoing_maybe_block', 10, 3);
@@ -148,7 +148,27 @@ class tinyShield{
 		return $pre;
 	}
 
+	/**
+	 * Trigger when all plugins are loaded
+	 * 
+	 * @return void
+	 * 
+	 * @access public
+	 * @static
+	 */
+	public static function on_plugins_loaded() {
+		if (get_option('tinyshield_incoming_enabled', true)) {
+			if (self::incoming_maybe_block()) {
+				status_header(403);
+				nocache_headers();
+				exit;
+			}
+		}
+	}
+
 	public static function incoming_maybe_block(){
+		$maybe_blocked = false;
+
 		$ip = self::get_valid_ip();
 
 		self::clean_up_lists();
@@ -166,21 +186,17 @@ class tinyShield{
 				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
 				self::write_log('tinyShield: ip blocked from local cached blacklist: ' . $ip);
-
-				status_header(403);
-				nocache_headers();
-				exit;
+				$maybe_blocked = true;
 			}
 
 			//if not cached, remote lookup
 			if(self::check_ip($ip)){
 				self::write_log('tinyShield: incoming remote blacklist lookup: ' . $ip);
-
-				status_header(403);
-				nocache_headers();
-				exit;
+				$maybe_blocked = true;
 			}
 		}
+
+		return $maybe_blocked;
 	}
 
 	private static function check_ip($ip, $direction = 'inbound', $domain = ''){
