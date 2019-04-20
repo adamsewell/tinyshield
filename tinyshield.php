@@ -61,6 +61,10 @@ class tinyShield{
 		<?php if(empty($options['site_activation_key'])): ?>
 			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . esc_attr(admin_url('options-general.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
+
+		<?php if($options['tinyshield_disabled']): ?>
+			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . esc_attr(admin_url('options-general.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
+		<?php endif; ?>
 <?php
 	}
 
@@ -89,8 +93,10 @@ class tinyShield{
 	}
 
 	public static function on_activation(){
-		if(!current_user_can('activate_plugins')) return;
-
+		if(!current_user_can('activate_plugins')){
+			_e('You are not authorized to perform this operation.', 'tinyshield');
+			die();
+		}
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
 		$cached_whitelist = get_option('tinyshield_cached_whitelist');
 		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
@@ -119,12 +125,13 @@ class tinyShield{
 	}
 
 	public static function outgoing_maybe_block($pre, $args, $url){
+		$options = get_option('tinyshield_options');
 
-		if(empty($url) || !$host = parse_url($url, PHP_URL_HOST)){
+		if(empty($url) || !$host = parse_url($url, PHP_URL_HOST) || $options['tinyshield_disabled']){
 			return $pre;
 		}
 
-		//bypass our domain
+		//bypass known good hosts
 		$whitelisted_domains = array(
 			'endpoint.tinyshield.me',
 			'api.wordpress.org',
@@ -169,7 +176,7 @@ class tinyShield{
 	public static function on_plugins_loaded() {
 		$options = get_option('tinyshield_options');
 
-		if($options['tinyshield_disabled'] && self::incoming_maybe_block()){
+		if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
 			status_header(403);
 			nocache_headers();
 			exit;
