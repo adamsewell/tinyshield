@@ -39,7 +39,7 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
     //Return the title contents
     return sprintf('%1$s %3$s',
         /*$1%s*/ $item['iphash'],
-        /*$2%s*/ $item['expires'],
+        /*$2%s*/ $item['date_added'],
         /*$3%s*/ $this->row_actions($actions)
     );
 	}
