@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.2.4
+Version: 0.2.5
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -39,6 +39,7 @@ class tinyShield{
 
 		add_action('admin_menu', 'tinyShield::add_menu');
 		add_action('admin_notices', 'tinyShield::notices');
+		add_action('admin_init', 'tinyShield::update_options');
 
 		//hook to process incoming connections
 		add_action('plugins_loaded', 'tinyShield::on_plugins_loaded', 0);
@@ -69,15 +70,13 @@ class tinyShield{
 		}
 	}
 
-	public static function on_activation(){
+	public static function update_options(){
 		$options = get_option('tinyshield_options');
-		$cached_blacklist = get_option('tinyshield_cached_blacklist');
-		$cached_whitelist = get_option('tinyshield_cached_whitelist');
-		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
 
 		$default_options = array(
 			'report_failed_logins' => true,
-			'block_top_countries' => false
+			'block_top_countries' => false,
+			'tinyshield_disabled' => false
 		);
 
 		if(empty($options)){
@@ -86,6 +85,17 @@ class tinyShield{
 			$merged_options = $options + $default_options;
 			update_option('tinyshield_options', $merged_options);
 		}
+
+	}
+
+	public static function on_activation(){
+		if(!current_user_can('activate_plugins')) return;
+
+		$cached_blacklist = get_option('tinyshield_cached_blacklist');
+		$cached_whitelist = get_option('tinyshield_cached_whitelist');
+		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
+
+		self::update_options();
 
 		if(!is_array($cached_blacklist)){
 			$cached_blacklist = array();
@@ -150,19 +160,19 @@ class tinyShield{
 
 	/**
 	 * Trigger when all plugins are loaded
-	 * 
+	 *
 	 * @return void
-	 * 
+	 *
 	 * @access public
 	 * @static
 	 */
 	public static function on_plugins_loaded() {
-		if (get_option('tinyshield_incoming_enabled', true)) {
-			if (self::incoming_maybe_block()) {
-				status_header(403);
-				nocache_headers();
-				exit;
-			}
+		$options = get_option('tinyshield_options');
+
+		if($options['tinyshield_disabled'] && self::incoming_maybe_block()){
+			status_header(403);
+			nocache_headers();
+			exit;
 		}
 	}
 
@@ -210,7 +220,7 @@ class tinyShield{
 				'body' => array(
 					'activation_key' => urlencode($options['site_activation_key']),
 					'requesting_site' => urlencode(site_url()),
-					'block_top_countries' => urlencode($options['block_top_countries'])
+					// 'block_top_countries' => urlencode($options['block_top_countries'])
 				)
 			)
 		);
@@ -413,7 +423,6 @@ class tinyShield{
 	}
 
 	public static function display_options(){
-
 		if(!current_user_can('manage_options')){
 			_e('You are not authorized to perform this operation.', 'tinyshield');
 			die();
@@ -482,7 +491,7 @@ class tinyShield{
 
 				$maybe_activate = self::activate_site($registration_data);
 
-				if(!empty($maybe_activate) && $maybe_activate->message == 'activated'){
+				if(!empty($maybe_activate->message) && $maybe_activate->message == 'activated'){
 					$options['site_activation_key'] = $maybe_activate->activation_key;
 					update_option('tinyshield_options', $options);
 					$alerts = $success_messages['site_key_activated'];
@@ -765,9 +774,13 @@ class tinyShield{
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
-							<h3><?php _e('Block Top Attacking Countries', 'tinyshield'); ?></h3>
+							<!-- <h3><?php _e('Block Top Attacking Countries', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable the blocking of top attacking countries. The list includes, but is not limited to China, Russia, Turkey, India, Pakistan, Romania and others. Adheres to permanent whitelist. <strong>Disabled by default.</strong></p>
-							<p><input type="checkbox" name="options[block_top_countries]" id="options[block_top_countries]" <?php echo ($options['block_top_countries']) ? 'checked' : 'unchecked' ?> /> <label for="block_top_countries"><?php _e('Block Top Countries?', 'tinyshield'); ?></label></p>
+							<p><input type="checkbox" name="options[block_top_countries]" id="options[block_top_countries]" <?php echo ($options['block_top_countries']) ? 'checked' : 'unchecked' ?> /> <label for="block_top_countries"><?php _e('Block Top Countries?', 'tinyshield'); ?></label></p> -->
+
+							<h3><?php _e('Disable tinyShield', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable the core functionality of this plugin. It is <strong>NOT</strong> recommended to disable tinyShield and if you must, do only for testing purposes. <strong>Disabled by default.</strong></p>
+							<p><input type="checkbox" name="options[tinyshield_disabled]" id="options[tinyshield_disabled]" <?php echo ($options['tinyshield_disabled']) ? 'checked' : 'unchecked' ?> /> <label for="tinyshield_disabled"><?php _e('Disable tinyShield?', 'tinyshield'); ?></label></p>
 
 							<div class="submit">
 								<?php wp_nonce_field('tinyshield-update-options'); ?>
