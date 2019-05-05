@@ -229,7 +229,7 @@ class tinyShield{
 				update_option('tinyshield_cached_whitelist', $cached_whitelist);
 
 				self::write_log('tinyShield: incoming ip found in local whitelist and was allowed: ' . $ip);
-				return true;
+				return false;
 			}
 
 			//check local cached blacklist
