@@ -98,9 +98,9 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
         $iphash_data = json_decode($iphash_data);
 				$data[] = array(
           'action' => $action_messages[$iphash_data->action],
-          'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
+          'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji : ''),
 					'iphash' => long2ip($iphash),
-          'isp' => $iphash_data->geo_ip->isp,
+          'isp' => (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->isp : ''),
           'direction' => $direction_icons[$iphash_data->direction],
           'last_attempt' => $iphash_data->last_attempt,
           'rdns' => (!empty($iphash_data->called_domain) ? $iphash_data->called_domain : $iphash_data->rdns)
