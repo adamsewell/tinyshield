@@ -643,7 +643,7 @@ class tinyShield{
 					}
 				}
 
-				if($invalid_ip){
+				if(isset($invalid_ip) && $invalid_ip){
 ?>
 					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', "tinyshield");?></strong></p></div>
 <?php
