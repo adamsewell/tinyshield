@@ -50,10 +50,6 @@ class tinyShield{
 
 		//hook into the failed login attempts and report back
 		add_filter('wp_login_failed', 'tinyShield::log_failed_login');
-
-		//hook into the redirect_canonical filter to detect user enumeration
-		add_filter('redirect_canonical', 'tinyShield::log_user_enumeration', 10, 2);
-
 	}
 
 	public static function notices(){
@@ -189,6 +185,8 @@ class tinyShield{
 	 */
 	public static function on_plugins_loaded() {
 		$options = get_option('tinyshield_options');
+
+		tinyShield::log_user_enumeration();
 
 		if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
 			status_header(403);
@@ -412,10 +410,10 @@ class tinyShield{
 
 	}
 
-	public static function log_user_enumeration($redirect, $request){
+	public static function log_user_enumeration(){
 		$options = get_option('tinyshield_options');
 
-		if(!is_admin() && preg_match('/author=([0-9]*)/i', $request) && $options['report_user_enumeration']){
+		if(!is_user_logged_in() && $options['report_user_enumeration'] && isset($_REQUEST['author'])){
 			$remote_ip = self::get_valid_ip();
 			$response = wp_remote_post(
 				self::$tinyshield_report_url,
@@ -429,8 +427,6 @@ class tinyShield{
 				)
 			);
 		}
-
-		return $redirect;
 	}
 
 	public static function log_failed_login($username){
