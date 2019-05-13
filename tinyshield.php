@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.2.6
+Version: 0.2.8
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -52,7 +52,7 @@ class tinyShield{
 		add_filter('wp_login_failed', 'tinyShield::log_failed_login');
 
 		//hook into the redirect_canonical filter to detect user enumeration
-		//add_action('request', 'tinyShield::log_block_user_enumeration');
+		add_filter('redirect_canonical', 'tinyShield::log_user_enumeration', 10, 2);
 
 	}
 
@@ -81,6 +81,7 @@ class tinyShield{
 
 		$default_options = array(
 			'report_failed_logins' => true,
+			'report_user_enumeration' => true,
 			'block_top_countries' => false,
 			'tinyshield_disabled' => false
 		);
@@ -409,6 +410,27 @@ class tinyShield{
 
 		return sanitize_text_field(wp_remote_retrieve_body($return));
 
+	}
+
+	public static function log_user_enumeration($redirect, $request){
+		$options = get_option('tinyshield_options');
+
+		if(!is_admin() && preg_match('/author=([0-9]*)/i', $request) && $options['report_user_enumeration']){
+			$remote_ip = self::get_valid_ip();
+			$response = wp_remote_post(
+				self::$tinyshield_report_url,
+				array(
+					'body' => array(
+						'ip_to_report' => $remote_ip,
+						'type' => 'user_enumeration',
+						'reporting_site' => site_url(),
+						'time_of_occurance' => current_time('timestamp')
+					)
+				)
+			);
+		}
+
+		return $redirect;
 	}
 
 	public static function log_failed_login($username){
@@ -855,6 +877,10 @@ class tinyShield{
 							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
+
+							<h3><?php _e('Report User Enumeration Attempts', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong>Enabled by default.</strong></p>
+							<p><input type="checkbox" name="options[report_user_enumeration]" id="options[report_user_enumeration]" <?php echo ($options['report_user_enumeration']) ? 'checked' : 'unchecked' ?> /> <label for="report_user_enumeration"><?php _e('Report User Enumeration Attempts?', 'tinyshield'); ?></label></p>
 
 							<!-- <h3><?php _e('Block Top Attacking Countries', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable the blocking of top attacking countries. The list includes, but is not limited to China, Russia, Turkey, India, Pakistan, Romania and others. Adheres to permanent whitelist. <strong>Disabled by default.</strong></p>
