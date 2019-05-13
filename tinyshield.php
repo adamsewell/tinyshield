@@ -60,18 +60,18 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 ?>
 		<?php if(empty($options['site_activation_key'])): ?>
-			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . esc_attr(admin_url('options-general.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
+			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . esc_attr(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
 		<?php if($options['tinyshield_disabled']): ?>
-			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . esc_attr(admin_url('options-general.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
+			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . esc_attr(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 <?php
 	}
 
 	public static function add_menu(){
-		if(function_exists('add_options_page')){
-			add_options_page('tinyShield', 'tinyShield', 'manage_options', basename(__FILE__), 'tinyShield::display_options');
+		if(function_exists('add_menu_page')){
+			add_menu_page('tinyShield', 'tinyShield', 'manage_options', basename(__FILE__), 'tinyShield::display_options', plugin_dir_url(__FILE__) . 'img/tinyshield.png');
 		}
 	}
 
