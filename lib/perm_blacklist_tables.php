@@ -68,7 +68,7 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 
 	function prepare_items(){
 		global $wpdb;
-    $cached_perm_blacklist = get_option('tinyshield_cached_perm_whitelist');
+    $cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
 
 		$per_page = 25;
 
