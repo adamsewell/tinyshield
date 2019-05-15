@@ -31,9 +31,9 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 	}
 
 	function column_iphash($item){
-    $perm_whitelist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-whitelist-item');
+    $perm_blacklist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-blacklist-item');
 		$actions = array(
-			'delete' => sprintf('<a href="?page=%s&tab=perm-whitelist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Whitelist</a>', $_REQUEST['page'], 'delete-perm-whitelist', $perm_whitelist_item_remove_nonce, ip2long($item['iphash']))
+			'delete' => sprintf('<a href="?page=%s&tab=perm-blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Blacklist</a>', $_REQUEST['page'], 'delete-perm-blacklist', $perm_blacklist_item_remove_nonce, ip2long($item['iphash']))
 		);
 
     //Return the title contents
