@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.2.8
+Version: 0.2.9
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -68,6 +68,12 @@ class tinyShield{
 	public static function add_menu(){
 		if(function_exists('add_menu_page')){
 			add_menu_page('tinyShield', 'tinyShield', 'manage_options', basename(__FILE__), 'tinyShield::display_options', plugin_dir_url(__FILE__) . 'img/tinyshield.png');
+			add_submenu_page(basename(__FILE__), 'tinyShield', 'Activity Log', 'manage_options', basename(__FILE__), 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Permanent Whitelist', 'Permanent Whitelist', 'manage_options', 'tinyshield.php&tab=perm-whitelist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Permanent Blacklist', 'Permanent Blacklist', 'manage_options', 'tinyshield.php&tab=perm-blacklist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Whitelist', 'Whitelist', 'manage_options', 'tinyshield.php&tab=whitelist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Blacklist', 'Blacklist', 'manage_options', 'tinyshield.php&tab=blacklist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Settings', 'Settings', 'manage_options', 'tinyshield.php&tab=settings', 'tinyShield::display_options');
 		}
 	}
 
@@ -241,13 +247,13 @@ class tinyShield{
 				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
 				self::write_log('tinyShield: ip blocked from local cached blacklist: ' . $ip);
-				$maybe_blocked = true;
+				return true;
 			}
 
 			//ip does not exist locally at all, remote lookup needed
 			if(self::check_ip($ip)){
 				self::write_log('tinyShield: incoming remote blacklist lookup: ' . $ip);
-				$maybe_blocked = true;
+				return true;
 			}
 		}
 
