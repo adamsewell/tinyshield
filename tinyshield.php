@@ -78,26 +78,28 @@ class tinyShield{
 	}
 
 	public static function update_options(){
-		$options = get_option('tinyshield_options');
-		$cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
+		if(current_user_can('manage_options')){
+			$options = get_option('tinyshield_options');
+			$cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
 
-		$default_options = array(
-			'report_failed_logins' => true,
-			'report_user_enumeration' => true,
-			'block_top_countries' => false,
-			'tinyshield_disabled' => false
-		);
+			$default_options = array(
+				'report_failed_logins' => true,
+				'report_user_enumeration' => true,
+				'block_top_countries' => false,
+				'tinyshield_disabled' => false
+			);
 
-		if(empty($options)){
-			update_option('tinyshield_options', $default_options);
-		}else{
-			$merged_options = $options + $default_options;
-			update_option('tinyshield_options', $merged_options);
-		}
+			if(empty($options)){
+				update_option('tinyshield_options', $default_options);
+			}else{
+				$merged_options = $options + $default_options;
+				update_option('tinyshield_options', $merged_options);
+			}
 
-		if(!is_array($cached_perm_blacklist)){
-			$cached_perm_blacklist = array();
-			update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+			if(!is_array($cached_perm_blacklist)){
+				$cached_perm_blacklist = array();
+				update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+			}
 		}
 	}
 
