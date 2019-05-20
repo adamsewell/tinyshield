@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.3.0
+Version: 0.3.1
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -45,11 +45,14 @@ class tinyShield{
 		//hook to process incoming connections
 		add_action('plugins_loaded', 'tinyShield::on_plugins_loaded', 0);
 
+		//look for and possibly block user enumeration
+		add_action('parse_request', 'tinyShield::log_user_enumeration', 20);
+
 		//hook to process outgoing connections through the WordPress API
 		add_filter('pre_http_request', 'tinyShield::outgoing_maybe_block', 10, 3);
 
 		//hook into the failed login attempts and report back
-		add_filter('wp_login_failed', 'tinyShield::log_failed_login');
+		add_action('wp_login_failed', 'tinyShield::log_failed_login');
 	}
 
 	public static function notices(){
@@ -193,8 +196,6 @@ class tinyShield{
 	 */
 	public static function on_plugins_loaded() {
 		$options = get_option('tinyshield_options');
-
-		tinyShield::log_user_enumeration();
 
 		if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
 			status_header(403);
@@ -421,20 +422,33 @@ class tinyShield{
 	public static function log_user_enumeration(){
 		$options = get_option('tinyshield_options');
 
-		if(!is_user_logged_in() && $options['report_user_enumeration'] && isset($_REQUEST['author'])){
-			$remote_ip = self::get_valid_ip();
-			$response = wp_remote_post(
-				self::$tinyshield_report_url,
-				array(
-					'body' => array(
-						'ip_to_report' => $remote_ip,
-						'type' => 'user_enumeration',
-						'reporting_site' => site_url(),
-						'time_of_occurance' => current_time('timestamp')
-					)
-				)
-			);
+		if(!$options['report_user_enumeration']){
+			return false;
 		}
+
+		if(is_user_logged_in()){
+			return false;
+		}
+
+		if(!isset($_REQUEST['author']) && !isset($_REQUEST['author_name'])){
+			return false;
+		}
+
+		if(!get_option('permalink_structure')){
+			return false;
+		}
+
+		$response = wp_remote_post(
+			self::$tinyshield_report_url,
+			array(
+				'body' => array(
+					'ip_to_report' => $remote_ip,
+					'type' => 'user_enumeration',
+					'reporting_site' => site_url(),
+					'time_of_occurance' => current_time('timestamp')
+				)
+			)
+		);
 	}
 
 	public static function log_failed_login($username){
@@ -455,17 +469,6 @@ class tinyShield{
 						)
 					)
 				);
-			}
-		}
-	}
-
-	public static function log_block_user_enumeration($query){
-		if(!is_admin()){
-			$remote_ip = self::get_valid_ip();
-
-			if(preg_match('/\?author=([0-9]*)(\/*)/i', $request)){
-				var_dump($request);
-				die();
 			}
 		}
 	}
