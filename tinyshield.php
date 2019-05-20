@@ -156,6 +156,7 @@ class tinyShield{
 		$whitelisted_domains = array(
 			'endpoint.tinyshield.me',
 			'api.wordpress.org',
+			'downloads.wordpress.org',
 			parse_url(get_bloginfo('url'), PHP_URL_HOST)
 		);
 
@@ -423,26 +424,27 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 
 		if(!$options['report_user_enumeration']){
-			return false;
+			return;
 		}
 
 		if(is_user_logged_in()){
-			return false;
+			return;
 		}
 
+
 		if(!isset($_REQUEST['author']) && !isset($_REQUEST['author_name'])){
-			return false;
+			return;
 		}
 
 		if(!get_option('permalink_structure')){
-			return false;
+			return;
 		}
 
 		$response = wp_remote_post(
 			self::$tinyshield_report_url,
 			array(
 				'body' => array(
-					'ip_to_report' => $remote_ip,
+					'ip_to_report' => tinyShield::get_valid_ip(),
 					'type' => 'user_enumeration',
 					'reporting_site' => site_url(),
 					'time_of_occurance' => current_time('timestamp')
