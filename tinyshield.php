@@ -58,11 +58,11 @@ class tinyShield{
 	public static function notices(){
 		$options = get_option('tinyshield_options');
 ?>
-		<?php if(empty($options['site_activation_key'])): ?>
+		<?php if(current_user_can('manage_options') && empty($options['site_activation_key'])): ?>
 			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
-		<?php if($options['tinyshield_disabled']): ?>
+		<?php if(current_user_can('manage_options') && $options['tinyshield_disabled']): ?>
 			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 <?php
