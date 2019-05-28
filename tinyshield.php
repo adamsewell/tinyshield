@@ -292,7 +292,7 @@ class tinyShield{
 				$list_data = json_decode($response_body);
 				$list_data->last_attempt = current_time('timestamp');
 
-				if($list_data->action == 'block' || ($options['block_tor_exit_nodes'] && $list_data['is_tor_exit_node'] == 'yes')){
+				if($list_data->action == 'block' || ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
 
 					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 					$list_data->direction = $direction;
