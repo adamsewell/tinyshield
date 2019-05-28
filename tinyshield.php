@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.3.1
+Version: 0.3.2
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -88,8 +88,8 @@ class tinyShield{
 			$default_options = array(
 				'report_failed_logins' => true,
 				'report_user_enumeration' => true,
-				'block_top_countries' => false,
-				'tinyshield_disabled' => false
+				'tinyshield_disabled' => false,
+				'block_tor_exit_nodes' => false
 			);
 
 			if(empty($options)){
@@ -274,8 +274,7 @@ class tinyShield{
 			array(
 				'body' => array(
 					'activation_key' => urlencode($options['site_activation_key']),
-					'requesting_site' => urlencode(site_url()),
-					// 'block_top_countries' => urlencode($options['block_top_countries'])
+					'requesting_site' => urlencode(site_url())
 				)
 			)
 		);
@@ -293,7 +292,8 @@ class tinyShield{
 				$list_data = json_decode($response_body);
 				$list_data->last_attempt = current_time('timestamp');
 
-				if($list_data->action == 'block'){
+				if($list_data->action == 'block' || ($options['block_tor_exit_nodes'] && $list_data['is_tor_exit_node'] == 'yes')){
+
 					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 					$list_data->direction = $direction;
 					if($domain){
@@ -302,7 +302,9 @@ class tinyShield{
 					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
 					update_option('tinyshield_cached_blacklist', $cached_blacklist);
 					return true;
+
 				}elseif($list_data->action == 'allow'){
+
 					$list_data->expires = strtotime('+1 hour', current_time('timestamp'));
 					$list_data->direction = $direction;
 					if($domain){
@@ -312,6 +314,7 @@ class tinyShield{
 
 					update_option('tinyshield_cached_whitelist', $cached_whitelist);
 					return false;
+
 				}
 
 				return false; //default to allow in case of emergency
@@ -842,7 +845,6 @@ class tinyShield{
 							settings
 						**********************************
 				-->
-
 				<?php if($active_tab == 'settings'): ?>
 						<h2 class="title"><?php _e('Site Activation', 'tinyshield'); ?></h2>
 						<h3><?php _e('Activation Key', 'tinyshield'); ?></h3>
@@ -885,19 +887,19 @@ class tinyShield{
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
 							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
-							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="report_failed_logins"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
+							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Enumeration Attempts', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong>Enabled by default.</strong></p>
-							<p><input type="checkbox" name="options[report_user_enumeration]" id="options[report_user_enumeration]" <?php echo ($options['report_user_enumeration']) ? 'checked' : 'unchecked' ?> /> <label for="report_user_enumeration"><?php _e('Report User Enumeration Attempts?', 'tinyshield'); ?></label></p>
+							<p><input type="checkbox" name="options[report_user_enumeration]" id="options[report_user_enumeration]" <?php echo ($options['report_user_enumeration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_enumeration]"><?php _e('Report User Enumeration Attempts?', 'tinyshield'); ?></label></p>
 
-							<!-- <h3><?php _e('Block Top Attacking Countries', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable the blocking of top attacking countries. The list includes, but is not limited to China, Russia, Turkey, India, Pakistan, Romania and others. Adheres to permanent whitelist. <strong>Disabled by default.</strong></p>
-							<p><input type="checkbox" name="options[block_top_countries]" id="options[block_top_countries]" <?php echo ($options['block_top_countries']) ? 'checked' : 'unchecked' ?> /> <label for="block_top_countries"><?php _e('Block Top Countries?', 'tinyshield'); ?></label></p> -->
+							<h3><?php _e('Block Tor Exit Nodes', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable the blocking of <a href="https://www.torproject.org/" target="_blank">Tor</a> exit nodes. Tor can be used for malicious and legitimate purposes. If you have any reason anonymous users would access your site, leave this disabled. <strong>Disabled by default.</strong></p>
+							<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Disable tinyShield', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable the core functionality of this plugin. It is <strong>NOT</strong> recommended to disable tinyShield and if you must, do only for testing purposes. <strong>Disabled by default.</strong></p>
-							<p><input type="checkbox" name="options[tinyshield_disabled]" id="options[tinyshield_disabled]" <?php echo ($options['tinyshield_disabled']) ? 'checked' : 'unchecked' ?> /> <label for="tinyshield_disabled"><?php _e('Disable tinyShield?', 'tinyshield'); ?></label></p>
+							<p><input type="checkbox" name="options[tinyshield_disabled]" id="options[tinyshield_disabled]" <?php echo ($options['tinyshield_disabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[tinyshield_disabled]"><?php _e('Disable tinyShield?', 'tinyshield'); ?></label></p>
 
 							<div class="submit">
 								<?php wp_nonce_field('tinyshield-update-options'); ?>
