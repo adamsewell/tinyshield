@@ -86,6 +86,7 @@ class tinyShield{
 			$cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
 
 			$default_options = array(
+				'subscription' => 'community',
 				'report_failed_logins' => true,
 				'report_user_enumeration' => true,
 				'tinyshield_disabled' => false,
@@ -291,6 +292,12 @@ class tinyShield{
 
 				$list_data = json_decode($response_body);
 				$list_data->last_attempt = current_time('timestamp');
+
+				//update the subscription level from the servers response
+				if($list_data->subscription != $options['subscription']){
+					$options['subscription'] = sanitize_text_field($list_data->subscription);
+					update_option('tinyshield_options', $options);
+				}
 
 				if($list_data->action == 'block' || ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
 
@@ -865,6 +872,12 @@ class tinyShield{
 
 									<input type="hidden" name="activate[site]" value="<?php esc_attr_e(site_url()); ?>" />
 									<p><input class="button button-primary" type="submit" name="activate-site" id="activate-site" value="<?php _e('Activate This Site', 'tinyshield'); ?>" /></p>
+
+								<?php elseif($options['subscription'] != 'community' && !empty($options['site_activation_key'])): ?>
+									<p><input type="text" size="56" value="<?php _e('Your Site is Currently Activated with tinyShield Professional'); ?>" disabled /> 🎉 </p>
+									<?php wp_nonce_field('tinyshield-deactivate-site'); ?>
+									<input type="hidden" name="tinyshield_action" value="deactivate-site" />
+									<p><input class="button button-secondary" type="submit" name="deactivate-site" id="deactivate-site" value="<?php _e('Deactivate This Site', 'tinyshield'); ?>" /></p>
 								<?php else: ?>
 									<p><input type="text" size="56" value="<?php _e('Your Site is Currently Activated with tinyShield'); ?>" disabled /> 😎 </p>
 									<?php wp_nonce_field('tinyshield-deactivate-site'); ?>
@@ -875,9 +888,9 @@ class tinyShield{
 							</p>
 						</form>
 
-						<?php if(empty($options['site_professional_key']) && !empty($options['site_activation_key'])): ?>
+						<?php if($options['subscription'] == 'community' && !empty($options['site_activation_key'])): ?>
 							<h3><?php _e('Upgrade To Professional', 'tinyshield'); ?></h3>
-									<p><?php _e('Gain access to the most comprehensive blacklist and whitelist feeds we have to offer by signing up for our Professional service. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites.', 'tinyshield'); ?></p>
+									<p><?php _e('Gain access to the most comprehensive blacklist and whitelist feeds we have to offer by signing up for our Professional service. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, professional features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
 									<p><a target="_blank" href="<?php esc_attr_e(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Upgrade This Site', 'tinyshield'); ?></a></p>
 						<?php endif; ?>
 
@@ -893,10 +906,12 @@ class tinyShield{
 							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_user_enumeration]" id="options[report_user_enumeration]" <?php echo ($options['report_user_enumeration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_enumeration]"><?php _e('Report User Enumeration Attempts?', 'tinyshield'); ?></label></p>
 
-							<h3><?php _e('Block Tor Exit Nodes - Professional Feature', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable the blocking of <a href="https://www.torproject.org/" target="_blank">Tor</a> exit nodes. Tor can be used for malicious and legitimate purposes. If you have any reason anonymous users would access your site, leave this disabled. <strong>Disabled by default.</strong></p>
-							<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
-
+							<?php if($options['subscription'] != 'community'): ?>
+								<h3><?php _e('Block Tor Exit Nodes - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
+								<p>Toggle this to enable or disable the blocking of <a href="https://www.torproject.org/" target="_blank">Tor</a> exit nodes. Tor can be used for malicious and legitimate purposes. If you have any reason anonymous users would access your site, leave this disabled. <strong>Disabled by default.</strong></p>
+								<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
+							<?php endif; ?>
+							
 							<h3><?php _e('Disable tinyShield', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable the core functionality of this plugin. It is <strong>NOT</strong> recommended to disable tinyShield and if you must, do only for testing purposes. <strong>Disabled by default.</strong></p>
 							<p><input type="checkbox" name="options[tinyshield_disabled]" id="options[tinyshield_disabled]" <?php echo ($options['tinyshield_disabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[tinyshield_disabled]"><?php _e('Disable tinyShield?', 'tinyshield'); ?></label></p>
