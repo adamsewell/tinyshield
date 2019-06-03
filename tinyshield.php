@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.3.2
+Version: 0.3.3
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -22,11 +22,12 @@ Author URI: https://tinyshield.me
 */
 if(!defined('ABSPATH')) die();
 
-include_once(plugin_dir_path(__FILE__) . 'lib/blacklist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/whitelist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/activity_log_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/perm_whitelist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/perm_blacklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/blacklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/whitelist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/activity_log_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_whitelist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blacklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
 
 class tinyShield{
 
@@ -41,6 +42,7 @@ class tinyShield{
 		add_action('admin_menu', 'tinyShield::add_menu');
 		add_action('admin_notices', 'tinyShield::notices');
 		add_action('admin_init', 'tinyShield::update_options');
+		add_action('admin_enqueue_scripts', 'tinyShield::register_admin_resources');
 
 		//hook to process incoming connections
 		add_action('plugins_loaded', 'tinyShield::on_plugins_loaded', 0);
@@ -68,6 +70,15 @@ class tinyShield{
 <?php
 	}
 
+	public static function register_admin_resources($page){
+		if($page == 'toplevel_page_tinyshield'){
+			wp_enqueue_script('tinyshield-chosen', plugin_dir_url(__FILE__) . 'lib/js/chosen.jquery.min.js', array('jquery'), '1.8.7', true);
+			wp_enqueue_script('tinyshield-chosen-custom', plugin_dir_url(__FILE__) . 'lib/js/tinyshield.custom.js', array('jquery', 'tinyshield-chosen'), '1.0.0', true);
+			wp_enqueue_style('tinyshield-chosen-css', plugin_dir_url(__FILE__) . 'lib/css/chosen.css');
+			wp_enqueue_style('tinyshield-css', plugin_dir_url(__FILE__) . 'lib/css/tinyshield.css');
+		}
+	}
+
 	public static function add_menu(){
 		if(function_exists('add_menu_page')){
 			add_menu_page('tinyShield', 'tinyShield', 'manage_options', basename(__FILE__), 'tinyShield::display_options', plugin_dir_url(__FILE__) . 'img/tinyshield.png');
@@ -87,6 +98,7 @@ class tinyShield{
 
 			$default_options = array(
 				'subscription' => 'community',
+				'countries_to_block' => '',
 				'report_failed_logins' => true,
 				'report_user_enumeration' => true,
 				'tinyshield_disabled' => false,
@@ -299,7 +311,9 @@ class tinyShield{
 					update_option('tinyshield_options', $options);
 				}
 
-				if($list_data->action == 'block' || ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
+				$selected_countries_to_block = unserialize($options['countries_to_block']);
+
+				if($list_data->action == 'block' || (is_array($selected_countries_to_block) && in_array($list_data->geo_ip->country_code, $selected_countries_to_block)) || ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
 
 					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 					$list_data->direction = $direction;
@@ -525,10 +539,16 @@ class tinyShield{
 			if(is_array($_POST['options']) && !empty($_POST['options'])){
 				foreach($options as $key => $value){
 					if(array_key_exists($key, $_POST['options'])){
-						$options[$key] = filter_var($_POST['options'][$key], FILTER_VALIDATE_BOOLEAN);
-					}elseif(is_bool($value) && $value){
-						$options[$key] = false;
-					}elseif(is_null($value)){
+						if(is_null($value)){
+							$options[$key] = false;
+						}elseif(is_array($_POST['options'][$key]) || is_object($_POST['options'][$key])){
+							$options[$key] = serialize($_POST['options'][$key]);
+						}elseif(filter_var($_POST['options'][$key], FILTER_VALIDATE_BOOLEAN)){
+							$options[$key] = true;
+						}else{
+							$options[$key] = sanitize_text_field($value);
+						}
+					}else{
 						$options[$key] = false;
 					}
 				}
@@ -536,6 +556,7 @@ class tinyShield{
 
 			update_option('tinyshield_options', $options);
 			$alerts = $success_messages['settings_updated'];
+
 		}
 
 		/*****************************************
@@ -873,7 +894,7 @@ class tinyShield{
 									<input type="hidden" name="activate[site]" value="<?php esc_attr_e(site_url()); ?>" />
 									<p><input class="button button-primary" type="submit" name="activate-site" id="activate-site" value="<?php _e('Activate This Site', 'tinyshield'); ?>" /></p>
 
-								<?php elseif($options['subscription'] != 'community' && !empty($options['site_activation_key'])): ?>
+								<?php elseif(!is_null($options['subscription']) && $options['subscription'] != 'community'  && !empty($options['site_activation_key'])): ?>
 									<p><input type="text" size="56" value="<?php _e('Your Site is Currently Activated with tinyShield Professional'); ?>" disabled /> 🎉 </p>
 									<?php wp_nonce_field('tinyshield-deactivate-site'); ?>
 									<input type="hidden" name="tinyshield_action" value="deactivate-site" />
@@ -888,7 +909,7 @@ class tinyShield{
 							</p>
 						</form>
 
-						<?php if($options['subscription'] == 'community' && !empty($options['site_activation_key'])): ?>
+						<?php if(!is_null($options['subscription']) && $options['subscription'] == 'community' && !empty($options['site_activation_key'])): ?>
 							<h3><?php _e('Upgrade To Professional', 'tinyshield'); ?></h3>
 									<p><?php _e('Gain access to the most comprehensive blacklist and whitelist feeds we have to offer by signing up for our Professional service. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, professional features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
 									<p><a target="_blank" href="<?php esc_attr_e(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Upgrade This Site', 'tinyshield'); ?></a></p>
@@ -910,8 +931,28 @@ class tinyShield{
 								<h3><?php _e('Block Tor Exit Nodes - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
 								<p>Toggle this to enable or disable the blocking of <a href="https://www.torproject.org/" target="_blank">Tor</a> exit nodes. Tor can be used for malicious and legitimate purposes. If you have any reason anonymous users would access your site, leave this disabled. <strong>Disabled by default.</strong></p>
 								<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
+
+								<h3><?php _e('Block Countries (GeoIP Filtering) - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
+								<p>Select a country or multiple countries to block originating requests. <strong>No countries are selected by default.</strong></p>
+								<p>
+									<?php
+										$selected_countries = unserialize($options['countries_to_block']);
+										$countries = tinyShieldFunctions::get_country_codes();
+									?>
+
+									<select data-placeholder="Which Countries Would You Like To Block?" class="chosen-select" multiple name="options[countries_to_block][]">
+										<option value=""></option>
+										<?php foreach($countries as $code => $name): ?>
+											<?php if(is_array($selected_countries) && in_array($code, $selected_countries)): ?>
+												<option value="<?php esc_attr_e($code); ?>" selected> <?php esc_attr_e($name); ?></option>
+											<?php else: ?>
+												<option value="<?php esc_attr_e($code); ?>"> <?php esc_attr_e($name); ?></option>
+											<?php endif; ?>
+										<?php endforeach; ?>
+									</select>
+								</p>
 							<?php endif; ?>
-							
+
 							<h3><?php _e('Disable tinyShield', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable the core functionality of this plugin. It is <strong>NOT</strong> recommended to disable tinyShield and if you must, do only for testing purposes. <strong>Disabled by default.</strong></p>
 							<p><input type="checkbox" name="options[tinyshield_disabled]" id="options[tinyshield_disabled]" <?php echo ($options['tinyshield_disabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[tinyshield_disabled]"><?php _e('Disable tinyShield?', 'tinyshield'); ?></label></p>
@@ -919,6 +960,9 @@ class tinyShield{
 							<div class="submit">
 								<?php wp_nonce_field('tinyshield-update-options'); ?>
 								<input type="hidden" name="tinyshield_action" value="options_save" />
+								<input type="hidden" name="options[subscription]" value="<?php esc_attr_e($options['subscription']); ?>" />
+								<input type="hidden" name="options[site_activation_key]" value="<?php esc_attr_e($options['site_activation_key']); ?>" />
+
 								<input type="submit" class="button button-primary" name="tinyshield_save_options" value="<?php _e('Save Settings', 'tinyshield') ?>" />
 							</div>
 						</form>
