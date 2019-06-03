@@ -317,11 +317,15 @@ class tinyShield{
 
 					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 					$list_data->direction = $direction;
+					$list_data->action = 'block'; //sets action to block for logging purposes if country block or tor
+
 					if($domain){
 						$list_data->called_domain = $domain;
 					}
+
 					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
 					update_option('tinyshield_cached_blacklist', $cached_blacklist);
+
 					return true;
 
 				}elseif($list_data->action == 'allow'){
