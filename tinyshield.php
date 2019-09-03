@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.3.4
+Version: 0.3.5
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -532,6 +532,7 @@ class tinyShield{
 			'site_key_deactivated' => __('Site Key Deactivated', 'tinyshield'),
 			'settings_updated' => 'Settings Updated',
 			'blacklist_cleared' => 'Local Blacklist Has Been Cleared',
+			'perm_blacklist_cleared' => 'Permanent Blacklist Has Been Cleared',
 			'whitelist_cleared' => 'Local Whitelist Has Been Cleared',
 			'reported_false_positive' => 'Your report has been logged. Thanks for reporting, we\'ll check it out!'
 		);
@@ -642,6 +643,16 @@ class tinyShield{
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 
 			$alerts = $success_messages['whitelist_cleared'];
+		}
+
+		/*****************************************
+			Handle clearing of permanent blacklist
+		*****************************************/
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_permanent_blacklist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-permanent-blacklist')){
+			$cached_perm_blacklist = array();
+			update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+
+			$alerts = $success_messages['perm_blacklist_cleared'];
 		}
 
 		/*****************************************
@@ -946,7 +957,7 @@ class tinyShield{
 								<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
 
 								<h3><?php _e('Inclusive Block Countries (GeoIP Filtering) - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
-								<p>Select a country or multiple countries to block originating requests. <strong>No countries are selected by default.</strong></p>
+								<p>Select a country or multiple countries to block from accessing your site. <strong>No countries are selected by default.</strong></p>
 								<p>
 									<?php
 										$blocked_selected_countries = unserialize($options['countries_to_block']);
@@ -1008,7 +1019,7 @@ class tinyShield{
 						<h3><?php _e('Clear Cached Blacklist', 'tinyshield'); ?></h3>
 
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-							<p>Use this to clear all addresses from your local cached blacklist. Use only in case of issues.</p>
+							<p>Use this to clear all addresses from your local cached blacklist. This is not recommended and only use in case of issues or if directed by support.</p>
 							<?php wp_nonce_field('tinyshield-clear-local-blacklist'); ?>
 							<input type="hidden" name="tinyshield_action" value="clear_cached_blacklist" />
 							<p><input class="button button-secondary" type="submit" name="clear_cached_blacklist" id="clear_cached_blacklist" value="<?php _e('Clear Cache Blacklist', 'tinyshield'); ?>" /></p>
@@ -1017,10 +1028,19 @@ class tinyShield{
 						<h3><?php _e('Clear Cached Whitelist', 'tinyshield'); ?></h3>
 
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-							<p>Use this to clear all addresses from your local cached whitelist. Use only in case of issues.</p>
+							<p>Use this to clear all addresses from your local cached whitelist. This is not recommended and only use in case of issues or if directed by support.</p>
 							<?php wp_nonce_field('tinyshield-clear-local-whitelist'); ?>
 							<input type="hidden" name="tinyshield_action" value="clear_cached_whitelist" />
 							<p><input class="button button-secondary" type="submit" name="clear_cached_whitelist" id="clear_cached_whitelist" value="<?php _e('Clear Cache Whitelist', 'tinyshield'); ?>" /></p>
+						</form>
+
+						<h3><?php _e('Clear Permanent Blacklist', 'tinyshield'); ?></h3>
+
+						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+							<p>Use this to clear all addresses from your permanent blacklist. This is not recommended and only use in case of issues or if directed by support.</p>
+							<?php wp_nonce_field('tinyshield-clear-permanent-blacklist'); ?>
+							<input type="hidden" name="tinyshield_action" value="clear_permanent_blacklist" />
+							<p><input class="button button-secondary" type="submit" name="clear_permanent_blacklist" id="clear_permanent_blacklist" value="<?php _e('Clear Permanent Blacklist', 'tinyshield'); ?>" /></p>
 						</form>
 
 				<?php endif; ?>
