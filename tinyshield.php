@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.3.3
+Version: 0.3.4
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -99,6 +99,7 @@ class tinyShield{
 			$default_options = array(
 				'subscription' => 'community',
 				'countries_to_block' => '',
+				'countries_to_allow' => '',
 				'report_failed_logins' => true,
 				'report_user_enumeration' => true,
 				'tinyshield_disabled' => false,
@@ -121,8 +122,12 @@ class tinyShield{
 
 	public static function on_activation(){
 		if(!current_user_can('activate_plugins')){
-			_e('You are not authorized to perform this operation.', 'tinyshield');
-			die();
+			wp_die('You are not authorized to perform this operation.');
+		}
+
+		if(is_multisite()){
+			deactivate_plugins(plugin_basename(__FILE__));
+			wp_die('tinyShield is not compatible with WordPress multisite... yet.');
 		}
 
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
@@ -312,8 +317,12 @@ class tinyShield{
 				}
 
 				$selected_countries_to_block = unserialize($options['countries_to_block']);
+				$selected_countries_to_allow = unserialize($options['countries_to_allow']);
 
-				if($list_data->action == 'block' || (is_array($selected_countries_to_block) && in_array($list_data->geo_ip->country_code, $selected_countries_to_block)) || ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
+				if($list_data->action == 'block' ||
+				 (is_array($selected_countries_to_block) && in_array($list_data->geo_ip->country_code, $selected_countries_to_block)) ||
+				 (is_array($selected_countries_to_allow) && !in_array($list_data->geo_ip->country_code, $selected_countries_to_allow)) ||
+				 ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
 
 					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
 					$list_data->direction = $direction;
@@ -936,18 +945,18 @@ class tinyShield{
 								<p>Toggle this to enable or disable the blocking of <a href="https://www.torproject.org/" target="_blank">Tor</a> exit nodes. Tor can be used for malicious and legitimate purposes. If you have any reason anonymous users would access your site, leave this disabled. <strong>Disabled by default.</strong></p>
 								<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
 
-								<h3><?php _e('Block Countries (GeoIP Filtering) - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
+								<h3><?php _e('Inclusive Block Countries (GeoIP Filtering) - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
 								<p>Select a country or multiple countries to block originating requests. <strong>No countries are selected by default.</strong></p>
 								<p>
 									<?php
-										$selected_countries = unserialize($options['countries_to_block']);
+										$blocked_selected_countries = unserialize($options['countries_to_block']);
 										$countries = tinyShieldFunctions::get_country_codes();
 									?>
 
 									<select data-placeholder="Which Countries Would You Like To Block?" class="chosen-select" multiple name="options[countries_to_block][]">
 										<option value=""></option>
 										<?php foreach($countries as $code => $name): ?>
-											<?php if(is_array($selected_countries) && in_array($code, $selected_countries)): ?>
+											<?php if(is_array($blocked_selected_countries) && in_array($code, $blocked_selected_countries)): ?>
 												<option value="<?php esc_attr_e($code); ?>" selected> <?php esc_attr_e($name); ?></option>
 											<?php else: ?>
 												<option value="<?php esc_attr_e($code); ?>"> <?php esc_attr_e($name); ?></option>
@@ -956,6 +965,28 @@ class tinyShield{
 									</select>
 								</p>
 							<?php endif; ?>
+
+							<?php if($options['subscription'] != 'community'): ?>
+								<h3><?php _e('Exclusive Block Countries (GeoIP Filtering) - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
+								<p>Select a country or multiple countries to allow access to your site assuming all countries are blocked by default. <strong>Feature disabled until a country is selected.</strong></p>
+								<p>
+									<?php
+										$allowed_selected_countries = unserialize($options['countries_to_allow']);
+										$countries = tinyShieldFunctions::get_country_codes();
+									?>
+
+									<select data-placeholder="Which Countries Would You Like To Allow?" class="chosen-select" multiple name="options[countries_to_allow][]">
+										<option value=""></option>
+										<?php foreach($countries as $code => $name): ?>
+											<?php if(is_array($allowed_selected_countries) && in_array($code, $allowed_selected_countries)): ?>
+												<option value="<?php esc_attr_e($code); ?>" selected> <?php esc_attr_e($name); ?></option>
+											<?php else: ?>
+												<option value="<?php esc_attr_e($code); ?>"> <?php esc_attr_e($name); ?></option>
+											<?php endif; ?>
+										<?php endforeach; ?>
+									</select>
+								</p>
+						<?php endif; ?>
 
 							<h3><?php _e('Disable tinyShield', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable the core functionality of this plugin. It is <strong>NOT</strong> recommended to disable tinyShield and if you must, do only for testing purposes. <strong>Disabled by default.</strong></p>
