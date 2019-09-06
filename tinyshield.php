@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.3.5
+Version: 0.3.6
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -449,12 +449,11 @@ class tinyShield{
 			return false;
 		}
 
-		if(wp_remote_retrieve_body($return) == 'site_key_deactivated'){
+		if(in_array(wp_remote_retrieve_body($return), array('site_key_deactivated', 'site_key_mismatch'))){
 			return true;
 		}
 
-		return sanitize_text_field(wp_remote_retrieve_body($return));
-
+		return false;
 	}
 
 	public static function log_user_enumeration(){
