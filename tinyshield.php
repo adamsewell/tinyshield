@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.3.6
+Version: 0.4.0
 Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -308,47 +308,48 @@ class tinyShield{
 			if(!empty($response_body)){
 
 				$list_data = json_decode($response_body);
-				$list_data->last_attempt = current_time('timestamp');
+				if(is_object($list_data)){
+					$list_data->last_attempt = current_time('timestamp');
 
-				//update the subscription level from the servers response
-				if($list_data->subscription != $options['subscription']){
-					$options['subscription'] = sanitize_text_field($list_data->subscription);
-					update_option('tinyshield_options', $options);
-				}
-
-				$selected_countries_to_block = unserialize($options['countries_to_block']);
-				$selected_countries_to_allow = unserialize($options['countries_to_allow']);
-
-				if($list_data->action == 'block' ||
-				 (is_array($selected_countries_to_block) && in_array($list_data->geo_ip->country_code, $selected_countries_to_block)) ||
-				 (is_array($selected_countries_to_allow) && !in_array($list_data->geo_ip->country_code, $selected_countries_to_allow)) ||
-				 ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
-
-					$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
-					$list_data->direction = $direction;
-					$list_data->action = 'block'; //sets action to block for logging purposes if country block or tor
-
-					if($domain){
-						$list_data->called_domain = $domain;
+					//update the subscription level from the servers response
+					if($list_data->subscription != $options['subscription']){
+						$options['subscription'] = sanitize_text_field($list_data->subscription);
+						update_option('tinyshield_options', $options);
 					}
 
-					$cached_blacklist[ip2long($ip)] = json_encode($list_data);
-					update_option('tinyshield_cached_blacklist', $cached_blacklist);
+					$selected_countries_to_block = unserialize($options['countries_to_block']);
+					$selected_countries_to_allow = unserialize($options['countries_to_allow']);
 
-					return true;
+					if($list_data->action == 'block' ||
+					 (is_array($selected_countries_to_block) && in_array($list_data->geo_ip->country_code, $selected_countries_to_block)) ||
+					 (is_array($selected_countries_to_allow) && !in_array($list_data->geo_ip->country_code, $selected_countries_to_allow)) ||
+					 ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
 
-				}elseif($list_data->action == 'allow'){
+						$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
+						$list_data->direction = $direction;
+						$list_data->action = 'block'; //sets action to block for logging purposes if country block or tor
 
-					$list_data->expires = strtotime('+1 hour', current_time('timestamp'));
-					$list_data->direction = $direction;
-					if($domain){
-						$list_data->called_domain = $domain;
+						if($domain){
+							$list_data->called_domain = $domain;
+						}
+
+						$cached_blacklist[ip2long($ip)] = json_encode($list_data);
+						update_option('tinyshield_cached_blacklist', $cached_blacklist);
+
+						return true;
+
+					}elseif($list_data->action == 'allow'){
+
+						$list_data->expires = strtotime('+1 hour', current_time('timestamp'));
+						$list_data->direction = $direction;
+						if($domain){
+							$list_data->called_domain = $domain;
+						}
+						$cached_whitelist[ip2long($ip)] = json_encode($list_data);
+
+						update_option('tinyshield_cached_whitelist', $cached_whitelist);
+						return false;
 					}
-					$cached_whitelist[ip2long($ip)] = json_encode($list_data);
-
-					update_option('tinyshield_cached_whitelist', $cached_whitelist);
-					return false;
-
 				}
 
 				return false; //default to allow in case of emergency
@@ -583,6 +584,7 @@ class tinyShield{
 					'fname' => sanitize_text_field($_POST['activate']['fname']),
 					'lname' => sanitize_text_field($_POST['activate']['lname']),
 					'email' => sanitize_text_field($_POST['activate']['email']),
+					'optin' => sanitize_text_field($_POST['actiavte']['optin']),
 					'association_key' => sanitize_text_field($_POST['activate']['association_key']),
 					'site' => esc_attr($_POST['activate']['site'])
 				);
