@@ -570,20 +570,21 @@ class tinyShield{
 		$success_messages = array(
 			'site_key_activated' => __('Your site is now activated!', 'tinyshield'),
 			'site_key_deactivated' => __('Site Key Deactivated', 'tinyshield'),
-			'settings_updated' => 'Settings Updated',
-			'blacklist_cleared' => 'Local Blacklist Has Been Cleared',
-			'perm_blacklist_cleared' => 'Permanent Blacklist Has Been Cleared',
-			'whitelist_cleared' => 'Local Whitelist Has Been Cleared',
-			'reported_false_positive' => 'Your report has been logged. Thanks for reporting, we\'ll check it out!'
+			'settings_updated' => __('Settings Updated', 'tinyshield'),
+			'blacklist_cleared' => __('Local Blacklist Has Been Cleared', 'tinyshield'),
+			'perm_blacklist_cleared' => __('Permanent Blacklist Has Been Cleared', 'tinyshield'),
+			'whitelist_cleared' => __('Local Whitelist Has Been Cleared', 'tinyshield'),
+			'reported_false_positive' => __('Your report has been logged. Thanks for reporting, we\'ll check it out!', 'tinyshield')
 		);
 
 		$error_messages = array(
 			'key_not_found' => __('Sorry, this key was not found. Please try again.', 'tinyshield'),
 			'key_in_use' => __('Sorry, this site has already been activated. Please contact support.', 'tinyshield'),
-			'key_expired' => 'This key is expired. Please renew your key.',
-			'key_banned' => 'This key has been banned.',
-			'something_went_wrong' => 'Something went wrong but we\'re not sure what...',
-			'missing_registration_data' => 'You must provide your first name, last name, and email address to register your site.'
+			'key_expired' => __('This key is expired. Please renew your key.', 'tinyshield'),
+			'key_banned' => __('This key has been banned.', 'tinyshield'),
+			'something_went_wrong' => __('Something went wrong but we\'re not sure what...', 'tinyshield'),
+			'missing_registration_data' => __('You must provide your first name, last name, and email address to register your site.', 'tinyshield'),
+			'ip_could_not_be_found' => __('The IP could not be found.', 'tinyshield')
 		);
 
 		/*****************************************
@@ -709,23 +710,28 @@ class tinyShield{
 				$ip_to_report = $meta->ip_address;
 			}
 
-			$response = wp_remote_post(
-				self::$tinyshield_report_url,
-				array(
-					'body' => array(
-						'ip_to_report' => $ip_to_report,
-						'type' => 'report_false_positive',
-						'reporting_site' => site_url(),
-						'time_of_occurance' => current_time('timestamp')
+			if(!empty($ip_to_report)){
+				$response = wp_remote_post(
+					self::$tinyshield_report_url,
+					array(
+						'body' => array(
+							'ip_to_report' => $ip_to_report,
+							'type' => 'report_false_positive',
+							'reporting_site' => site_url(),
+							'time_of_occurance' => current_time('timestamp')
+						)
 					)
-				)
-			);
+				);
 
-			if(!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200){
-				$alerts = $success_messages['reported_false_positive'];
+				if(!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200){
+					$alerts = $success_messages['reported_false_positive'];
+				}else{
+					$errors = $error_messages['something_went_wrong'];
+				}
 			}else{
-				$errors = $error_messages['something_went_wrong'];
+				$errors = $error_messages['ip_could_not_be_found'];
 			}
+
 		}
 
 		/*****************************************
