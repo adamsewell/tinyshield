@@ -1,6 +1,9 @@
 <?php
 
 class tinyShieldFunctions extends tinyShield{
+  public static function is_sha1($str) {
+    return (bool) preg_match('/^[0-9a-f]{40}$/i', $str);
+  }
 
   public static function get_country_codes(){
     return array(

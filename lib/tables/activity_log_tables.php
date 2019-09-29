@@ -1,9 +1,8 @@
 <?php
-
 /***********************************************
 Author: Adam Sewell
-As Of: 0.1.7
-Date: 02/03/19
+As Of: 0.4.0
+Date: 9/29/19
 Class: tinyShield_ActivityLog_Table
 ***********************************************/
 
@@ -30,16 +29,16 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 		}
 	}
 
-	function column_iphash($item){
+	function column_ip_address($item){
     $report_false_postiive_nonce = wp_create_nonce('tinyshield-report-false-positive');
 
 		$actions = array(
-			'report_false_positive' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s"> Report False Positive</a>', $_REQUEST['page'], 'report_false_positive', $report_false_postiive_nonce, ip2long($item['iphash'])),
+			'report_false_positive' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s"> Report False Positive</a>', $_REQUEST['page'], 'report_false_positive', $report_false_postiive_nonce, $item['iphash']),
 		);
 
     //Return the title contents
     return sprintf('%1$s %3$s',
-        /*$1%s*/ $item['iphash'],
+        /*$1%s*/ $item['ip_address'],
         /*$2%s*/ $item['last_attempt'],
         /*$3%s*/ $this->row_actions($actions)
     );
@@ -52,7 +51,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
   function get_columns(){
   		$columns = array(
         'cb' => '<input type="checkbox" />',
-  			'iphash' => 'IP Address',
+  			'ip_address' => 'IP Address',
         'rdns' => 'Hostname',
         'isp' => 'ISP',
         'origin' => 'Location',
@@ -66,7 +65,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 
 	function get_sortable_columns() {
 		$sortable_columns = array(
-				'iphash'     => array('iphash', false),     //true means it's already sorted
+				'ip_address'     => array('ip_address', false),     //true means it's already sorted
 				'last_attempt'    => array('last_attempt', true),
 
 		);
@@ -74,7 +73,6 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 	}
 
 	function prepare_items(){
-		global $wpdb;
     $cached_whitelist = get_option('tinyshield_cached_whitelist');
     $cached_blacklist = get_option('tinyshield_cached_blacklist');
     $action_messages = array('allow' => '✅', 'block' => '⛔');
@@ -97,9 +95,10 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 			foreach($logs as $iphash => $iphash_data){
         $iphash_data = json_decode($iphash_data);
 				$data[] = array(
+          'iphash' => $iphash,
           'action' => $action_messages[$iphash_data->action],
           'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji : ''),
-					'iphash' => long2ip($iphash),
+					'ip_address' => $iphash_data->ip_address,
           'isp' => (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->isp : ''),
           'direction' => $direction_icons[$iphash_data->direction],
           'last_attempt' => $iphash_data->last_attempt,
@@ -108,10 +107,10 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 			}
     }
 
-		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'last_attempt'; //If no sort, default to title
+		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'ip_address') ? 'ip_address' : 'last_attempt'; //If no sort, default to title
 		$order = (isset($_GET['order']) && strtolower($_GET['order']) == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
 
-    $iphash = array_column($data, 'iphash');
+    $ip_address = array_column($data, 'ip_address');
     $last_attempt = array_column($data, 'last_attempt');
 
     array_multisort($$orderby, $order, $data);
