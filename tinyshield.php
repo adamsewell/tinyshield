@@ -342,8 +342,7 @@ class tinyShield{
 
 		if(!is_wp_error($response)){
 			self::write_log('tinyShield: blacklist lookup response');
-			self::write_log($response_body);
-			self::write_log($response_code);
+			self::write_log('tinyShield: ' . $response_body);
 
 			if(!empty($response_body)){
 
@@ -701,11 +700,20 @@ class tinyShield{
 			Handle Reporting of False Positives
 		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'report_false_positive' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-report-false-positive')){
+
+			if(!empty($cached_whitelist[$_GET['iphash']])){
+				$meta = json_decode($cached_whitelist[$_GET['iphash']]);
+				$ip_to_report = $meta->ip_address;
+			}elseif(!empty($cached_blacklist[$_GET['iphash']])){
+				$meta = json_decode($cached_blacklist[$_GET['iphash']]);
+				$ip_to_report = $meta->ip_address;
+			}
+
 			$response = wp_remote_post(
 				self::$tinyshield_report_url,
 				array(
 					'body' => array(
-						'ip_to_report' => long2ip($_GET['iphash']),
+						'ip_to_report' => $ip_to_report,
 						'type' => 'report_false_positive',
 						'reporting_site' => site_url(),
 						'time_of_occurance' => current_time('timestamp')
