@@ -2,7 +2,7 @@
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
 Version: 0.4.0
-Description: tinyShield is a security plugin that utilizes real time blacklists and also crowd sources attacker data for enhanced protection.
+Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
 Author URI: https://tinyshield.me
