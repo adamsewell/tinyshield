@@ -30,20 +30,20 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 		}
 	}
 
-	function column_iphash($item){
+	function column_ip_address($item){
     $move_item_to_perm_whitelist_nonce = wp_create_nonce('tinyshield-move-item-perm-whitelist');
     $move_item_to_whitelist_nonce = wp_create_nonce('tinyshield-move-item-whitelist');
     $blacklist_item_remove_nonce = wp_create_nonce('tinyshield-delete-blacklist-item');
 
 		$actions = array(
-      'add_to_whitelist' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Whitelist</a>',$_REQUEST['page'], 'add_to_whitelist', $move_item_to_whitelist_nonce, ip2long($item['iphash'])),
-			'add_to_perm_whitelist' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Permanent Whitelist</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_perm_whitelist_nonce, ip2long($item['iphash'])),
-      'delete' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Blacklist</a>', $_REQUEST['page'], 'remove_from_blacklist', $blacklist_item_remove_nonce, ip2long($item['iphash']))
+      'add_to_whitelist' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Whitelist</a>',$_REQUEST['page'], 'add_to_whitelist', $move_item_to_whitelist_nonce, $item['iphash']),
+			'add_to_perm_whitelist' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Permanent Whitelist</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_perm_whitelist_nonce, $item['iphash']),
+      'delete' => sprintf('<a href="?page=%s&tab=blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Blacklist</a>', $_REQUEST['page'], 'remove_from_blacklist', $blacklist_item_remove_nonce, $item['iphash'])
 		);
 
     //Return the title contents
     return sprintf('%1$s %3$s',
-        /*$1%s*/ $item['iphash'],
+        /*$1%s*/ $item['ip_address'],
         /*$2%s*/ $item['expires'],
         /*$3%s*/ $this->row_actions($actions)
     );
@@ -56,7 +56,7 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 	function get_columns(){
 		$columns = array(
       'cb' => '<input type="checkbox" />',
-			'iphash' => 'IP Address',
+			'ip_address' => 'IP Address',
       'rdns' => 'Hostname',
       'isp' => 'ISP',
       'origin' => 'Location',
@@ -69,7 +69,7 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 
 	function get_sortable_columns() {
 		$sortable_columns = array(
-				'iphash'     => array('iphash', false),     //true means it's already sorted
+				'ip_address'     => array('ip_address', false),     //true means it's already sorted
         'last_attempt' => array('last_attempt', false),
 				'expires'    => array('expires', false),
 		);
@@ -77,7 +77,6 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 	}
 
 	function prepare_items(){
-		global $wpdb;
 		$cached_blacklist = get_option('tinyshield_cached_blacklist');
 
 		$per_page = 25;
@@ -95,7 +94,8 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 			foreach($cached_blacklist as $iphash => $iphash_data){
         $iphash_data = json_decode($iphash_data);
 				$data[] = array(
-					'iphash' => long2ip($iphash),
+					'iphash' => $iphash,
+          'ip_address' => $iphash_data->ip_address,
           'expires' => $iphash_data->expires,
           'last_attempt' => $iphash_data->last_attempt,
           'isp' => $iphash_data->geo_ip->isp,
@@ -105,10 +105,10 @@ class tinyShield_BlackList_Table extends WP_List_Table{
 			}
     }
 
-    $orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'expires'; //If no sort, default to title
+    $orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'ip_address') ? 'ip_address' : 'expires'; //If no sort, default to title
 		$order = (isset($_GET['order']) && $_GET['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
 
-    $iphash = array_column($data, 'iphash');
+    $ip_address = array_column($data, 'ip_address');
     $expires = array_column($data, 'expires');
     $last_attempt = array_column($data, 'last_attempt');
 

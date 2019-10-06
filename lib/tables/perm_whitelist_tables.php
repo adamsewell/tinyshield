@@ -30,15 +30,15 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 		}
 	}
 
-	function column_iphash($item){
+	function column_ip_address($item){
     $perm_whitelist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-whitelist-item');
 		$actions = array(
-			'delete' => sprintf('<a href="?page=%s&tab=perm-whitelist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Whitelist</a>', $_REQUEST['page'], 'delete-perm-whitelist', $perm_whitelist_item_remove_nonce, ip2long($item['iphash']))
+			'delete' => sprintf('<a href="?page=%s&tab=perm-whitelist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Whitelist</a>', $_REQUEST['page'], 'delete-perm-whitelist', $perm_whitelist_item_remove_nonce, $item['iphash'])
 		);
 
     //Return the title contents
     return sprintf('%1$s %3$s',
-        /*$1%s*/ $item['iphash'],
+        /*$1%s*/ $item['ip_address'],
         /*$2%s*/ $item['date_added'],
         /*$3%s*/ $this->row_actions($actions)
     );
@@ -51,7 +51,7 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 	function get_columns(){
 		$columns = array(
 			'cb' => '<input type="checkbox" />',
-			'iphash' => 'IP Address',
+			'ip_address' => 'IP Address',
 			'date_added' => 'Date Added'
 		);
 
@@ -60,16 +60,14 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 
 	function get_sortable_columns() {
 		$sortable_columns = array(
-				'iphash'     => array('iphash', false),     //true means it's already sorted
+				'ip_address'     => array('ip_address', false),     //true means it's already sorted
 				'date_added'    => array('date_added', false),
 		);
 		return $sortable_columns;
 	}
 
 	function prepare_items(){
-		global $wpdb;
     $cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
-
 		$per_page = 25;
 
 		$columns = $this->get_columns();
@@ -82,11 +80,12 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 		$data = array();
 
 		if(is_array($cached_perm_whitelist) && !empty($cached_perm_whitelist)){
-			foreach($cached_perm_whitelist as $iphash => $meta){
+			foreach($cached_perm_whitelist as $sha1 => $meta){
         $meta = json_decode($meta);
 				$data[] = array(
-					'iphash' => long2ip($iphash),
-          'date_added' => $meta->expires
+					'iphash' => $sha1,
+          'ip_address' => $meta->ip_address,
+          'date_added' => $meta->expires,
 				);
 			}
     }

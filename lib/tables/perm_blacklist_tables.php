@@ -2,8 +2,8 @@
 
 /***********************************************
 Author: Adam Sewell
-As Of: 0.2.5
-Date: 5/4/19
+As Of: 0.4.0
+Date: 9/29/19
 Class: tinyShield_PermBlackList_Table
 ***********************************************/
 
@@ -30,15 +30,15 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 		}
 	}
 
-	function column_iphash($item){
+	function column_ip_address($item){
     $perm_blacklist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-blacklist-item');
 		$actions = array(
-			'delete' => sprintf('<a href="?page=%s&tab=perm-blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Blacklist</a>', $_REQUEST['page'], 'delete-perm-blacklist', $perm_blacklist_item_remove_nonce, ip2long($item['iphash']))
+			'delete' => sprintf('<a href="?page=%s&tab=perm-blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Blacklist</a>', $_REQUEST['page'], 'delete-perm-blacklist', $perm_blacklist_item_remove_nonce, $item['iphash'])
 		);
 
     //Return the title contents
     return sprintf('%1$s %3$s',
-        /*$1%s*/ $item['iphash'],
+        /*$1%s*/ $item['ip_address'],
         /*$2%s*/ $item['date_added'],
         /*$3%s*/ $this->row_actions($actions)
     );
@@ -51,7 +51,7 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 	function get_columns(){
 		$columns = array(
 			'cb' => '<input type="checkbox" />',
-			'iphash' => 'IP Address',
+			'ip_address' => 'IP Address',
 			'date_added' => 'Date Added'
 		);
 
@@ -60,7 +60,7 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 
 	function get_sortable_columns() {
 		$sortable_columns = array(
-				'iphash'     => array('iphash', false),     //true means it's already sorted
+				'ip_address'     => array('ip_address', false),     //true means it's already sorted
 				'date_added'    => array('date_added', false),
 		);
 		return $sortable_columns;
@@ -85,16 +85,17 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 			foreach($cached_perm_blacklist as $iphash => $meta){
         $meta = json_decode($meta);
 				$data[] = array(
-					'iphash' => long2ip($iphash),
+          'iphash' => $iphash,
+					'ip_address' => $meta->ip_address,
           'date_added' => $meta->expires
 				);
 			}
     }
 
-		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'iphash') ? 'iphash' : 'date_added'; //If no sort, default to title
+		$orderby = (isset($_GET['orderby']) && $_GET['orderby'] == 'ip_address') ? 'ip_address' : 'date_added'; //If no sort, default to title
 		$order = (isset($_GET['order']) && $_GET['order'] == 'asc') ? SORT_ASC : SORT_DESC; //If no order, default to asc
 
-    $iphash = array_column($data, 'iphash');
+    $ip_address = array_column($data, 'ip_address');
     $date_added = array_column($data, 'date_added');
 
     array_multisort($$orderby, $order, $data);
