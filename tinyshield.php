@@ -521,7 +521,7 @@ class tinyShield{
 			self::$tinyshield_report_url,
 			array(
 				'body' => array(
-					'ip_to_report' => tinyShield::get_valid_ip(),
+					'ip_to_report' => self::get_valid_ip(),
 					'type' => 'user_enumeration',
 					'reporting_site' => site_url(),
 					'time_of_occurance' => current_time('timestamp')
