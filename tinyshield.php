@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.4.0
+Version: 0.4.1
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -125,8 +125,10 @@ class tinyShield{
 						$ip = long2ip($key);
 						$meta = json_decode($entry);
 
-						$meta->ip_address = $ip;
-						$updated_array[sha1($ip)] = json_encode($meta);
+						if(is_object($meta)){
+							$meta->ip_address = $ip;
+							$updated_array[sha1($ip)] = json_encode($meta);
+						}
 					}
 
 					update_option('tinyshield_cached_perm_blacklist', $updated_array);
@@ -138,8 +140,11 @@ class tinyShield{
 					foreach($cached_perm_whitelist as $key => $entry){
 						$ip = long2ip($key);
 						$meta = json_decode($entry);
-						$meta->ip_address = $ip;
-						$updated_array[sha1($ip)] = json_encode($meta);
+
+						if(is_object($meta)){
+							$meta->ip_address = $ip;
+							$updated_array[sha1($ip)] = json_encode($meta);
+						}
 					}
 
 					update_option('tinyshield_cached_perm_whitelist', $updated_array);
