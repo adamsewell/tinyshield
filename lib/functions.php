@@ -5,6 +5,15 @@ class tinyShieldFunctions extends tinyShield{
     return (bool) preg_match('/^[0-9a-f]{40}$/i', $str);
   }
 
+  public static function is_activated(){
+    $options = get_option('tinyshield_options');
+    if(!empty($options['site_activation_key'])){
+      return true;
+    }
+
+    return false;
+  }
+
   public static function get_country_codes(){
     return array(
       'AF' => 'Afghanistan',

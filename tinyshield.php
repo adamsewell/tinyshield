@@ -232,12 +232,14 @@ class tinyShield{
 
 		if(!empty($cached_blacklist) && array_key_exists(sha1($ip), $cached_blacklist)){
 			$blacklist_data = json_decode($cached_blacklist[sha1($ip)]);
-			$blacklist_data->last_attempt = current_time('timestamp');
+			if(is_object($blacklist_data)){
+				$blacklist_data->last_attempt = current_time('timestamp');
 
-			$cached_blacklist[sha1($ip)] = json_encode($blacklist_data);
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				$cached_blacklist[sha1($ip)] = json_encode($blacklist_data);
+				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
-			return true;
+				return true;
+			}
 		}
 
 		if($result = self::check_ip($ip, 'outbound', $host)){
@@ -274,7 +276,7 @@ class tinyShield{
 		self::clean_up_lists();
 
 		//check if valid ip and check the local whitelist
-		if($ip && !is_user_logged_in()){
+		if(tinyShieldFunctions::is_activated() && $ip && !is_user_logged_in()){
 
 			//check local perm whitelist
 			$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
@@ -295,13 +297,15 @@ class tinyShield{
 			if(!empty($cached_whitelist) && array_key_exists(sha1($ip), $cached_whitelist)){
 
 				$data = json_decode($cached_whitelist[sha1($ip)]);
-				$data->last_attempt = current_time('timestamp');
+				if(is_object($data)){
+					$data->last_attempt = current_time('timestamp');
 
-				$cached_whitelist[sha1($ip)] = json_encode($data);
-				update_option('tinyshield_cached_whitelist', $cached_whitelist);
+					$cached_whitelist[sha1($ip)] = json_encode($data);
+					update_option('tinyshield_cached_whitelist', $cached_whitelist);
 
-				self::write_log('tinyShield: incoming ip found in local whitelist and was allowed: ' . $ip);
-				return false;
+					self::write_log('tinyShield: incoming ip found in local whitelist and was allowed: ' . $ip);
+					return false;
+				}
 			}
 
 			//check local cached blacklist
@@ -309,12 +313,14 @@ class tinyShield{
 			if(!empty($cached_blacklist) && array_key_exists(sha1($ip), $cached_blacklist)){
 
 				$blacklist_data = json_decode($cached_blacklist[sha1($ip)]);
-				$blacklist_data->last_attempt = current_time('timestamp');
-				$cached_blacklist[sha1($ip)] = json_encode($blacklist_data);
-				update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				if(is_object($blacklist_data)){
+					$blacklist_data->last_attempt = current_time('timestamp');
+					$cached_blacklist[sha1($ip)] = json_encode($blacklist_data);
+					update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
-				self::write_log('tinyShield: ip blocked from local cached blacklist: ' . $ip);
-				return true;
+					self::write_log('tinyShield: ip blocked from local cached blacklist: ' . $ip);
+					return true;
+				}
 			}
 
 			//ip does not exist locally at all, remote lookup needed
@@ -410,16 +416,15 @@ class tinyShield{
 
 		foreach($cached_blacklist as $iphash => $iphash_data){
 			$iphash_data = json_decode($iphash_data);
-
-			if($iphash_data->expires < current_time('timestamp')){
+			if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
 				unset($cached_blacklist[$iphash]);
 			}
+
 		}
 
 		foreach($cached_whitelist as $iphash => $iphash_data){
 			$iphash_data = json_decode($iphash_data);
-
-			if($iphash_data->expires < current_time('timestamp')){
+			if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
 				unset($cached_whitelist[$iphash]);
 			}
 		}
@@ -468,15 +473,17 @@ class tinyShield{
 		}
 
 		$response = json_decode(wp_remote_retrieve_body($return));
-
-		if(!empty($response->message) && $response->message == 'activated'){
-			return $response;
-		}elseif(!empty($response->message)){
-			return sanitize_text_field($response->message);
-		}else{
-			return false;
+		if(is_object($response)){
+			if(!empty($response->message) && $response->message == 'activated'){
+				return $response;
+			}elseif(!empty($response->message)){
+				return sanitize_text_field($response->message);
+			}else{
+				return false;
+			}
 		}
 
+		return false;
 	}
 
 	private static function deactivate_site($registration_data){
@@ -709,10 +716,14 @@ class tinyShield{
 
 			if(!empty($cached_whitelist[$_GET['iphash']])){
 				$meta = json_decode($cached_whitelist[$_GET['iphash']]);
-				$ip_to_report = $meta->ip_address;
+				if(is_object($meta)){
+					$ip_to_report = $meta->ip_address;
+				}
 			}elseif(!empty($cached_blacklist[$_GET['iphash']])){
 				$meta = json_decode($cached_blacklist[$_GET['iphash']]);
-				$ip_to_report = $meta->ip_address;
+				if(is_object($meta)){
+					$ip_to_report = $meta->ip_address;
+				}
 			}
 
 			if(!empty($ip_to_report)){
@@ -830,19 +841,21 @@ class tinyShield{
 		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'add_to_blacklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-blacklist')){
 			$new_bl_item = json_decode($cached_whitelist[$_GET['iphash']]);
-			$new_bl_item->action = 'block';
-			$new_bl_item->date_added = current_time('timestamp');
-			$new_bl_item->expires = strtotime('+24 hours', current_time('timestamp'));
+			if(is_object($new_bl_item)){
+				$new_bl_item->action = 'block';
+				$new_bl_item->date_added = current_time('timestamp');
+				$new_bl_item->expires = strtotime('+24 hours', current_time('timestamp'));
 
-			$cached_blacklist[$_GET['iphash']] = json_encode($new_bl_item);
+				$cached_blacklist[$_GET['iphash']] = json_encode($new_bl_item);
 
-			unset($cached_whitelist[$_GET['iphash']]);
+				unset($cached_whitelist[$_GET['iphash']]);
 
-			update_option('tinyshield_cached_whitelist', $cached_whitelist);
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				update_option('tinyshield_cached_whitelist', $cached_whitelist);
+				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 ?>
 			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Blacklist for 24 hours.', "tinyshield");?></strong></p></div>
 <?php
+			}
 		}
 
 		/*****************************************
@@ -881,19 +894,21 @@ class tinyShield{
 		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'add_to_whitelist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-whitelist')){
 			$new_wl_item = json_decode($cached_blacklist[$_GET['iphash']]);
-			$new_wl_item->action = 'allow';
-			$new_wl_item->date_added = current_time('timestamp');
-			$new_wl_item->expires = strtotime('+1 hour', current_time('timestamp'));
+			if(is_object($new_wl_item)){
+				$new_wl_item->action = 'allow';
+				$new_wl_item->date_added = current_time('timestamp');
+				$new_wl_item->expires = strtotime('+1 hour', current_time('timestamp'));
 
-			$cached_whitelist[$_GET['iphash']] = json_encode($new_wl_item);
+				$cached_whitelist[$_GET['iphash']] = json_encode($new_wl_item);
 
-			unset($cached_blacklist[$_GET['iphash']]);
-			update_option('tinyshield_cached_whitelist', $cached_whitelist);
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				unset($cached_blacklist[$_GET['iphash']]);
+				update_option('tinyshield_cached_whitelist', $cached_whitelist);
+				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has added to the Whitelist.', "tinyshield");?></strong></p></div>
+				<div class="updated"><p><strong><?php _e('The IP Address has added to the Whitelist.', "tinyshield");?></strong></p></div>
 <?php
+			}
 		}
 
 		/*****************************************
