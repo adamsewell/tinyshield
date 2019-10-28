@@ -462,6 +462,7 @@ class tinyShield{
 					'email' => $registration_data['email'],
 					'association_key' => $registration_data['association_key'],
 					'site' => $registration_data['site'],
+					'optin' => $registration_data['optin'],
 					'action' => 'activate'
 				)
 			)
@@ -637,7 +638,7 @@ class tinyShield{
 					'fname' => sanitize_text_field($_POST['activate']['fname']),
 					'lname' => sanitize_text_field($_POST['activate']['lname']),
 					'email' => sanitize_text_field($_POST['activate']['email']),
-					'optin' => sanitize_text_field($_POST['actiavte']['optin']),
+					'optin' => sanitize_text_field($_POST['activate']['optin']),
 					'association_key' => sanitize_text_field($_POST['activate']['association_key']),
 					'site' => esc_attr($_POST['activate']['site'])
 				);
@@ -654,7 +655,6 @@ class tinyShield{
 			}else{
 				$errors = $error_messages['missing_registration_data'];
 			}
-
 		}
 
 		/*****************************************
@@ -994,6 +994,8 @@ class tinyShield{
 									</p>
 									<p><input size="56" type="text" placeholder="<?php _e('Contact Email Address', 'tinyshield'); ?>" name="activate[email]" value="" /></p>
 									<p><input size="56" type="text" placeholder="<?php _e('Site Association Key (For Agencies or Multiple Sites)', 'tinyshield'); ?>" name="activate[association_key]" value="" /></p>
+									<p><input type="checkbox" name="activate[optin]" id="activate[optin]" checked /> <label for="activate[optin]"><?php _e('Can we contact you for marketing purposes?', 'tinyshield'); ?></label></p>
+
 
 									<input type="hidden" name="activate[site]" value="<?php esc_attr_e(site_url()); ?>" />
 									<p><input class="button button-primary" type="submit" name="activate-site" id="activate-site" value="<?php _e('Activate This Site', 'tinyshield'); ?>" /></p>
