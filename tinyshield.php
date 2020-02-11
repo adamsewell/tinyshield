@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.4.1
+Version: 0.5.0
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -20,6 +20,7 @@ Author URI: https://tinyshield.me
 	You should have received a copy of the GNU General Public License
 	along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 if(!defined('ABSPATH')) die();
 
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/blacklist_tables.php');
@@ -49,6 +50,9 @@ class tinyShield{
 
 		//look for and possibly block user enumeration
 		add_action('parse_request', 'tinyShield::log_user_enumeration', 20);
+
+		//log 404s - could be a scanner if multiple 404s in rapid succession
+		add_action('wp', 'tinyShield::log_404');
 
 		//hook to process outgoing connections through the WordPress API
 		add_filter('pre_http_request', 'tinyShield::outgoing_maybe_block', 10, 3);
@@ -102,12 +106,14 @@ class tinyShield{
 				'countries_to_allow' => '',
 				'report_failed_logins' => true,
 				'report_user_enumeration' => true,
+				'report_404' => false,
+				'report_uri' => false,
 				'tinyshield_disabled' => false,
 				'block_tor_exit_nodes' => false,
 				'db_version' => '040'
 			);
 
-			if(empty($options['db_version'])){ //upgrade 0.3.x to 0.4.x
+			if(empty($options['db_version'])){ //upgrade 0.3.x to 0.4.x+
 				$cached_blacklist = get_option('tinyshield_cached_blacklist');
 				$cached_whitelist = get_option('tinyshield_cached_whitelist');
 				$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
@@ -248,26 +254,22 @@ class tinyShield{
 			return true;
 		}
 
-
 		return $pre;
 	}
 
-	/**
-	 * Trigger when all plugins are loaded
-	 *
-	 * @return void
-	 *
-	 * @access public
-	 * @static
-	 */
 	public static function on_plugins_loaded() {
 		$options = get_option('tinyshield_options');
+
+		if(!$options['tinyshield_disabled']){
+			tinyShield::analyze_request_uri();
+		}
 
 		if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
 			status_header(403);
 			nocache_headers();
 			exit;
 		}
+
 	}
 
 	public static function incoming_maybe_block(){
@@ -324,8 +326,8 @@ class tinyShield{
 			}
 
 			//ip does not exist locally at all, remote lookup needed
+			self::write_log('tinyShield: incoming remote blacklist lookup: ' . $ip);
 			if(self::check_ip($ip)){
-				self::write_log('tinyShield: incoming remote blacklist lookup: ' . $ip);
 				return true;
 			}
 		}
@@ -352,7 +354,7 @@ class tinyShield{
 		$response_body = wp_remote_retrieve_body($response);
 
 		if(!is_wp_error($response)){
-			self::write_log('tinyShield: blacklist lookup response');
+			self::write_log('tinyShield: remote blacklist lookup response');
 			self::write_log('tinyShield: ' . $response_body);
 
 			if(!empty($response_body)){
@@ -510,6 +512,32 @@ class tinyShield{
 		return false;
 	}
 
+	public static function log_404(){
+		if(is_404()){
+			$options = get_option('tinyshield_options');
+
+			if(!$options['report_404']){
+				return;
+			}
+
+			if(is_user_logged_in()){
+				return;
+			}
+
+			$response = wp_remote_post(
+				self::$tinyshield_report_url,
+				array(
+					'body' => array(
+						'ip_to_report' => self::get_valid_ip(),
+						'type' => '404',
+						'reporting_site' => site_url(),
+						'time_of_occurance' => current_time('timestamp')
+					)
+				)
+			);
+		}
+	}
+
 	public static function log_user_enumeration(){
 		$options = get_option('tinyshield_options');
 
@@ -563,6 +591,33 @@ class tinyShield{
 				);
 			}
 		}
+	}
+
+	public static function analyze_request_uri(){
+		$url = $_SERVER['REQUEST_URI'];
+		$ip = self::get_valid_ip();
+		$options = get_option('tinyshield_options');
+
+		if(!$options['report_uri']){
+			return;
+		}
+
+		if(is_user_logged_in()){
+			return;
+		}
+
+		$response = wp_remote_post(
+			self::$tinyshield_report_url,
+			array(
+				'body' => array(
+					'ip_to_report' => self::get_valid_ip(),
+					'type' => 'report_uri',
+					'reporting_site' => site_url(),
+					'time_of_occurance' => current_time('timestamp'),
+					'uri' => urlencode($url)
+				)
+			)
+		);
 	}
 
 	public static function display_options(){
@@ -1032,6 +1087,10 @@ class tinyShield{
 							<h3><?php _e('Report User Enumeration Attempts', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_user_enumeration]" id="options[report_user_enumeration]" <?php echo ($options['report_user_enumeration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_enumeration]"><?php _e('Report User Enumeration Attempts?', 'tinyshield'); ?></label></p>
+
+							<h3><?php _e('Report 404', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable reporting 404 requests to tinyShield. We do this to check for rapid succession 404s which will occur in scans of sites. <strong>Disabled by default.</strong></p>
+							<p><input type="checkbox" name="options[report_404]" id="options[report_404]" <?php echo ($options['report_404']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_404]"><?php _e('Report 404s?', 'tinyshield'); ?></label></p>
 
 							<?php if($options['subscription'] != 'community'): ?>
 								<h3><?php _e('Block Tor Exit Nodes - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
