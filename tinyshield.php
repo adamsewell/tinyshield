@@ -45,6 +45,8 @@ class tinyShield{
 		add_action('admin_init', 'tinyShield::update_options');
 		add_action('admin_enqueue_scripts', 'tinyShield::register_admin_resources');
 
+		add_action('current_screen', 'tinyShield::acknowledge_admin_notice');
+
 		//hook to process incoming connections
 		add_action('plugins_loaded', 'tinyShield::on_plugins_loaded', 0);
 
@@ -71,7 +73,48 @@ class tinyShield{
 		<?php if(current_user_can('manage_options') && $options['tinyshield_disabled']): ?>
 			<div class="update-nag"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
+
+		<?php if(current_user_can('manage_options') && !is_null($options['subscription']) && $options['subscription'] == 'community' && $options['review_date'] >= current_time('timestamp') && empty(get_user_meta(get_current_user_id(), 'tinyshield_review_notice'))): ?>
+			<style>
+					p.review {
+							position: relative;
+							margin-left: 35px;
+							padding: 1px;
+					}
+					p.review span.dashicons-heart {
+							color: white;
+							background: #66BB6A;
+							position: absolute;
+							left: -50px;
+							padding: 9px;
+							top: -8px;
+					}
+
+					p.review strong {
+							color: #66BB6A;
+					}
+
+					p.review a.dismiss {
+							float: right;
+							text-decoration: none;
+							color: #66BB6A;
+					}
+			</style>
+
+			<?php
+				$active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'log';
+				$nag_admin_dismiss_url = "admin.php?page=tinyshield.php&tab=" . $active_tab . "&dismiss_tinyshield_nag=1";
+				$plugin_review_url = "https://wordpress.org/support/plugin/tinyshield/reviews/#new-post";
+			?>
+			<div class="notice notice-success"><p class="review"><span class="dashicons dashicons-heart"></span><strong><?php _e('tinyShield: Are you seeing benefit out of tinyShield? Consider <a target="_blank" href="'. esc_attr(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)) .'">upgrading to our professional plan</a> for lots of additional features or consider leaving us a <a target="_blank" href="' . esc_attr($plugin_review_url) . '">plugin review</a>!'); ?> <a href="<?php echo esc_url(admin_url($nag_admin_dismiss_url)); ?>" class="dismiss"><span class="dashicons dashicons-dismiss"></span></a></strong></p></div>
+		<?php endif; ?>
 <?php
+	}
+
+	public static function acknowledge_admin_notice(){
+		if(isset($_GET['dismiss_tinyshield_nag']) && $_GET['dismiss_tinyshield_nag'] == '1'){
+			add_user_meta(get_current_user_id(), 'tinyshield_review_notice', 'true', true);
+		}
 	}
 
 	public static function register_admin_resources($page){
@@ -110,6 +153,7 @@ class tinyShield{
 				'report_uri' => false,
 				'tinyshield_disabled' => false,
 				'block_tor_exit_nodes' => false,
+				'review_date' => strtotime('+30 days'),
 				'db_version' => '040'
 			);
 
@@ -128,12 +172,15 @@ class tinyShield{
 					$updated_array = array();
 
 					foreach($cached_perm_blacklist as $key => $entry){
-						$ip = long2ip($key);
-						$meta = json_decode($entry);
+						if(is_int($key)){
+							$ip = long2ip($key);
+							$meta = json_decode($entry);
 
-						if(is_object($meta)){
-							$meta->ip_address = $ip;
-							$updated_array[sha1($ip)] = json_encode($meta);
+
+							if(is_object($meta)){
+								$meta->ip_address = $ip;
+								$updated_array[sha1($ip)] = json_encode($meta);
+							}
 						}
 					}
 
@@ -212,6 +259,7 @@ class tinyShield{
 			$cached_whitelist = array();
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 		}
+
 	}
 
 	public static function outgoing_maybe_block($pre, $args, $url){
@@ -824,12 +872,12 @@ class tinyShield{
 
 				if($invalid_ip){
 ?>
-					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', "tinyshield");?></strong></p></div>
+					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', 'tinyshield');?></strong></p></div>
 <?php
 				}else{
 					update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 ?>
-					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Whitelist', "tinyshield");?></strong></p></div>
+					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Whitelist', 'tinyshield');?></strong></p></div>
 <?php
 				}
 		}
@@ -858,13 +906,13 @@ class tinyShield{
 
 				if(isset($invalid_ip) && $invalid_ip){
 ?>
-					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', "tinyshield");?></strong></p></div>
+					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', 'tinyshield');?></strong></p></div>
 <?php
 				}else{
 					update_option('tinyshield_cached_whitelist', $cached_whitelist);
 					update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
 ?>
-					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Blacklist', "tinyshield");?></strong></p></div>
+					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Blacklist', 'tinyshield');?></strong></p></div>
 <?php
 				}
 		}
@@ -876,7 +924,7 @@ class tinyShield{
 			unset($cached_perm_blacklist[$_GET['iphash']]);
 			update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
 ?>
-			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Blacklist', "tinyshield");?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Blacklist', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
@@ -887,7 +935,7 @@ class tinyShield{
 			unset($cached_perm_whitelist[$_GET['iphash']]);
 			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
 ?>
-			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Whitelist', "tinyshield");?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Whitelist', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
@@ -908,7 +956,7 @@ class tinyShield{
 				update_option('tinyshield_cached_whitelist', $cached_whitelist);
 				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Blacklist for 24 hours.', "tinyshield");?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Blacklist for 24 hours.', 'tinyshield');?></strong></p></div>
 <?php
 			}
 		}
@@ -929,7 +977,7 @@ class tinyShield{
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 			update_option('tinyshield_cached_blacklist', $cached_blacklist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Permanent Whitelist.', "tinyshield");?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Permanent Whitelist.', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
@@ -940,7 +988,7 @@ class tinyShield{
 			unset($cached_blacklist[$_GET['iphash']]);
 			update_option('tinyshield_cached_blacklist', $cached_blacklist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', "tinyshield");?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
@@ -961,7 +1009,7 @@ class tinyShield{
 				update_option('tinyshield_cached_blacklist', $cached_blacklist);
 
 ?>
-				<div class="updated"><p><strong><?php _e('The IP Address has added to the Whitelist.', "tinyshield");?></strong></p></div>
+				<div class="updated"><p><strong><?php _e('The IP Address has added to the Whitelist.', 'tinyshield');?></strong></p></div>
 <?php
 			}
 		}
@@ -973,7 +1021,7 @@ class tinyShield{
 			unset($cached_whitelist[$_GET['iphash']]);
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', "tinyshield");?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
