@@ -90,12 +90,13 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
     if(is_array($cached_whitelist) && !empty($cached_whitelist)){
 			foreach($cached_whitelist as $iphash => $iphash_data){
         $iphash_data = json_decode($iphash_data);
+
 				$data[] = array(
           'iphash' => $iphash,
 					'ip_address' => $iphash_data->ip_address,
           'last_attempt' => $iphash_data->last_attempt,
-          'origin' => (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
-          'isp' => $iphash_data->geo_ip->isp,
+          'origin' => (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . (!empty($iphash_data->geo_ip->country_name) ? $iphash_data->geo_ip->country_name : '') . ' ' . (!empty($iphash_data->geo_ip->country_flag_emoji) ? $iphash_data->geo_ip->country_flag_emoji : ''),
+          'isp' => (!empty($iphash_data->geo_ip->isp) ? $iphash_data->geo_ip->isp : ''),
           'rdns' => $iphash_data->rdns
 				);
 			}
