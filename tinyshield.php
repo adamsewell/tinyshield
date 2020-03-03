@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.5.0
+Version: 0.5.1
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -151,13 +151,15 @@ class tinyShield{
 				'report_user_enumeration' => true,
 				'report_404' => false,
 				'report_uri' => false,
+				'pretty_deny' => true,
 				'tinyshield_disabled' => false,
 				'block_tor_exit_nodes' => false,
 				'review_date' => strtotime('+30 days'),
 				'db_version' => '040'
 			);
 
-			if(empty($options['db_version'])){ //upgrade 0.3.x to 0.4.x+
+			//upgrade 0.3.x to 0.4.x+
+			if(!isset($options['db_version'])){
 				$cached_blacklist = get_option('tinyshield_cached_blacklist');
 				$cached_whitelist = get_option('tinyshield_cached_whitelist');
 				$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
@@ -176,7 +178,6 @@ class tinyShield{
 							$ip = long2ip($key);
 							$meta = json_decode($entry);
 
-
 							if(is_object($meta)){
 								$meta->ip_address = $ip;
 								$updated_array[sha1($ip)] = json_encode($meta);
@@ -191,12 +192,14 @@ class tinyShield{
 					$updated_array = array();
 
 					foreach($cached_perm_whitelist as $key => $entry){
-						$ip = long2ip($key);
-						$meta = json_decode($entry);
+						if(is_int($key)){
+							$ip = long2ip($key);
+							$meta = json_decode($entry);
 
-						if(is_object($meta)){
-							$meta->ip_address = $ip;
-							$updated_array[sha1($ip)] = json_encode($meta);
+							if(is_object($meta)){
+								$meta->ip_address = $ip;
+								$updated_array[sha1($ip)] = json_encode($meta);
+							}
 						}
 					}
 
@@ -207,7 +210,7 @@ class tinyShield{
 			if(empty($options)){
 				update_option('tinyshield_options', $default_options);
 			}else{
-				$merged_options = $options + $default_options;
+				$merged_options = array_replace($default_options, $options);
 				update_option('tinyshield_options', $merged_options);
 			}
 
@@ -260,6 +263,15 @@ class tinyShield{
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 		}
 
+		$orig_notice_file = plugin_dir_path(__FILE__) . 'tinyshield_block_notice.php';
+		$dest_notice_file = ABSPATH . 'tinyshield_block_notice.php';
+
+		if(!file_exists($dest_notice_file) || sha1($orig_notice_file) !== sha1($dest_notice_file)){
+			if(!copy($orig_notice_file, $dest_notice_file)){
+				self::write_log('tinyShield: failed to copy block notice to root');
+			}
+		}
+
 	}
 
 	public static function outgoing_maybe_block($pre, $args, $url){
@@ -308,14 +320,15 @@ class tinyShield{
 	public static function on_plugins_loaded() {
 		$options = get_option('tinyshield_options');
 
-		if(!$options['tinyshield_disabled']){
-			tinyShield::analyze_request_uri();
-		}
-
 		if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
-			status_header(403);
-			nocache_headers();
-			exit;
+			if($options['pretty_deny'] && file_exists(ABSPATH . 'tinyshield_block_notice.php')){
+				wp_redirect(site_url('tinyshield_block_notice.php'));
+				exit();
+			}else{
+				status_header(403);
+				nocache_headers();
+				exit;
+			}
 		}
 
 	}
@@ -870,7 +883,7 @@ class tinyShield{
 					}
 				}
 
-				if($invalid_ip){
+				if(isset($invalid_ip)){
 ?>
 					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', 'tinyshield');?></strong></p></div>
 <?php
@@ -1128,6 +1141,10 @@ class tinyShield{
 
 						<h2 class="title"><?php _e('Options', 'tinyshield'); ?></h2>
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+							<h3><?php _e('Pretty Deny', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable presenting blocked visitors with a page explaining they've been blocked. Also gives the option to report false positives. If disabled, blocked visitors will be given a 403 Forbidden error with nothing else. <strong>Enabled by default.</strong></p>
+							<p><input type="checkbox" name="options[pretty_deny]" id="options[pretty_deny]" <?php echo ($options['pretty_deny']) ? 'checked' : 'unchecked' ?> /> <label for="options[pretty_deny]"><?php _e('Pretty Deny?', 'tinyshield'); ?></label></p>
+
 							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
