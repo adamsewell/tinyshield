@@ -263,15 +263,6 @@ class tinyShield{
 			update_option('tinyshield_cached_whitelist', $cached_whitelist);
 		}
 
-		$orig_notice_file = plugin_dir_path(__FILE__) . 'tinyshield_block_notice.php';
-		$dest_notice_file = ABSPATH . 'tinyshield_block_notice.php';
-
-		if(!file_exists($dest_notice_file) || sha1($orig_notice_file) !== sha1($dest_notice_file)){
-			if(!copy($orig_notice_file, $dest_notice_file)){
-				self::write_log('tinyShield: failed to copy block notice to root');
-			}
-		}
-
 	}
 
 	public static function outgoing_maybe_block($pre, $args, $url){
@@ -320,6 +311,15 @@ class tinyShield{
 	public static function on_plugins_loaded() {
 		$options = get_option('tinyshield_options');
 
+		$orig_notice_file = plugin_dir_path(__FILE__) . 'tinyshield_block_notice.php';
+		$dest_notice_file = ABSPATH . 'tinyshield_block_notice.php';
+
+		if(!file_exists($dest_notice_file)){
+			if(!copy($orig_notice_file, $dest_notice_file)){
+				self::write_log('tinyShield: failed to copy block notice to root');
+			}
+		}
+
 		if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
 			if($options['pretty_deny'] && file_exists(ABSPATH . 'tinyshield_block_notice.php')){
 				wp_redirect(site_url('tinyshield_block_notice.php'));
@@ -330,7 +330,6 @@ class tinyShield{
 				exit;
 			}
 		}
-
 	}
 
 	public static function incoming_maybe_block(){
