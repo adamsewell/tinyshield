@@ -31,9 +31,13 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 
 	function column_ip_address($item){
     $report_false_postiive_nonce = wp_create_nonce('tinyshield-report-false-positive');
+    $move_item_to_whitelist_nonce = wp_create_nonce('tinyshield-move-item-whitelist');
+    $move_item_to_blacklist_nonce = wp_create_nonce('tinyshield-move-item-blacklist');
 
 		$actions = array(
-			'report_false_positive' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s"> Report False Positive</a>', $_REQUEST['page'], 'report_false_positive', $report_false_postiive_nonce, $item['iphash']),
+			'report_false_positive' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s"> Report</a>', $_REQUEST['page'], 'report_false_positive', $report_false_postiive_nonce, $item['iphash']),
+      'add_to_whitelist' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Whitelist</a>', $_REQUEST['page'], 'add_to_whitelist', $move_item_to_whitelist_nonce, $item['iphash']),
+      'delete' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Blacklist</a>', $_REQUEST['page'], 'add_to_blacklist', $move_item_to_blacklist_nonce, $item['iphash']),
 		);
 
     //Return the title contents
