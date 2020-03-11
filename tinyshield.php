@@ -28,6 +28,7 @@ include_once(plugin_dir_path(__FILE__) . 'lib/tables/whitelist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/activity_log_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_whitelist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blacklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/integrations/cloudflare.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
 
 class tinyShield{
@@ -504,7 +505,7 @@ class tinyShield{
 		return false;
 	}
 
-	private static function write_log($log){
+	public static function write_log($log){
 		if(true === WP_DEBUG){
 			if(is_array($log) || is_object($log)){
 				error_log(print_r($log, true));
