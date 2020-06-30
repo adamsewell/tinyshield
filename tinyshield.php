@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.5.2
+Version: 0.5.3
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -28,7 +28,6 @@ include_once(plugin_dir_path(__FILE__) . 'lib/tables/whitelist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/activity_log_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_whitelist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blacklist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/integrations/cloudflare.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
 
 class tinyShield{
@@ -62,6 +61,9 @@ class tinyShield{
 
 		//hook into the failed login attempts and report back
 		add_action('wp_login_failed', 'tinyShield::log_failed_login');
+
+		//hooks into the user registration process and checks our blacklist
+		add_filter('registration_errors', 'tinyShield::log_user_registration', 10, 3);
 	}
 
 	public static function notices(){
@@ -149,6 +151,7 @@ class tinyShield{
 				'countries_to_block' => '',
 				'countries_to_allow' => '',
 				'report_failed_logins' => true,
+				'report_user_registration' => true,
 				'report_user_enumeration' => true,
 				'report_404' => false,
 				'report_uri' => false,
@@ -654,6 +657,31 @@ class tinyShield{
 		}
 	}
 
+	public static function log_user_registration($errors, $user, $email){
+		$options = get_option('tinyshield_options');
+
+		if($options['report_user_registration']){
+			$remote_ip = self::get_valid_ip();
+
+			if($remote_ip){
+				$response = wp_remote_post(
+					self::$tinyshield_report_url,
+					array(
+						'body' => array(
+							'ip_to_report' => $remote_ip,
+							'type' => 'user_registration',
+							'username_tried' => $username,
+							'reporting_site' => site_url(),
+							'time_of_occurance' => current_time('timestamp')
+						)
+					)
+				);
+			}
+		}
+
+		return $errors;
+	}
+
 	public static function analyze_request_uri(){
 		$url = $_SERVER['REQUEST_URI'];
 		$ip = self::get_valid_ip();
@@ -1148,6 +1176,10 @@ class tinyShield{
 							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
+
+							<h3><?php _e('Report User Registration', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable reporting of user registration to tinyShield. We only send the IP address over to our servers for verification. Often times bots will try to register accounts to post spam or malicious links in posts. <strong>Enabled by default.</strong></p>
+							<p><input type="checkbox" name="options[report_user_registration]" id="options[report_user_registration]" <?php echo ($options['report_user_registration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_registration]"><?php _e('Report User Registration?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Enumeration Attempts', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong>Enabled by default.</strong></p>
