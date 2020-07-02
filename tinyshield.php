@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.5.3
+Version: 0.5.4
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -64,6 +64,12 @@ class tinyShield{
 
 		//hooks into the user registration process and checks our blacklist
 		add_filter('registration_errors', 'tinyShield::log_user_registration', 10, 3);
+
+		//adds honeypot to registration form
+		add_action('register_post', 'tinyShield::registration_form_check');
+		add_action('login_form_register', 'tinyShield::registration_form_check');
+		add_action('register_form', 'tinyShield::display_registration_honeypot', 99);
+		add_action('login_head', 'tinyShield::registration_style');
 	}
 
 	public static function notices(){
@@ -153,6 +159,8 @@ class tinyShield{
 				'report_failed_logins' => true,
 				'report_user_registration' => true,
 				'report_user_enumeration' => true,
+				'registration_form_honeypot' => true,
+				'registration_form_honeypot_key' => substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyz'), 0, 10),
 				'report_404' => false,
 				'report_uri' => false,
 				'pretty_deny' => true,
@@ -331,7 +339,7 @@ class tinyShield{
 			}else{
 				status_header(403);
 				nocache_headers();
-				exit;
+				exit();
 			}
 		}
 	}
@@ -500,12 +508,22 @@ class tinyShield{
 	}
 
 	private static function get_valid_ip(){
-		//supports ipv4 and ipv6
-		if(filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
-			return $_SERVER['REMOTE_ADDR'];
+	  //supports ipv4 and ipv6
+
+	  //if cloudflare, set the remote_addr to the original
+	  if(isset($_SERVER['HTTP_CF_CONNECTING_IP'])){
+	    $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_CF_CONNECTING_IP'];
+	  }
+
+		if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])){
+			$_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
 		}
 
-		return false;
+	  if(filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
+	    return $_SERVER['REMOTE_ADDR'];
+	  }
+
+	  return false;
 	}
 
 	public static function write_log($log){
@@ -680,6 +698,75 @@ class tinyShield{
 		}
 
 		return $errors;
+	}
+
+	public static function registration_form_check(){
+		$options = get_option('tinyshield_options');
+
+		if($options['registration_form_honeypot']){
+			if(isset($_POST[$options['registration_form_honeypot_key']]) && !empty($_POST[$options['registration_form_honeypot_key']])){
+				if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
+
+					//if user registration is enabled
+					if($options['report_user_registration']){
+						$remote_ip = self::get_valid_ip();
+
+						if($remote_ip){
+							$response = wp_remote_post(
+								self::$tinyshield_report_url,
+								array(
+									'body' => array(
+										'ip_to_report' => $remote_ip,
+										'type' => 'user_registration',
+										'username_tried' => $username,
+										'reporting_site' => site_url(),
+										'time_of_occurance' => current_time('timestamp')
+									)
+								)
+							);
+						}
+					}
+
+					if($options['pretty_deny'] && file_exists(ABSPATH . 'tinyshield_block_notice.php')){
+						wp_redirect(site_url('tinyshield_block_notice.php'));
+						exit();
+					}else{
+						status_header(403);
+						nocache_headers();
+						exit();
+					}
+				}
+			}
+		}
+	}
+
+	public static function registration_style(){
+		$options = get_option('tinyshield_options');
+?>
+		<style type="text/css">.<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name_field { display: none; }</style>
+<?php
+	}
+
+	public static function registration_scripts(){
+		$options = get_option('tinyshield_options');
+?>
+		<script type="text/javascript">jQuery( '#<?php esc_attr_e($options['registration_form_honeypot_key']); ?> ?>_name' ).val( '' );</script>
+<?php
+	}
+
+	public static function display_registration_honeypot(){
+		$options = get_option('tinyshield_options');
+
+		wp_enqueue_script( 'jquery' );
+		add_action('login_footer', 'tinyShield::registration_scripts', 25);
+?>
+		<p class="<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name_field">
+			<label for="<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name_field">
+					<?php _e('Do not fill this out.'); ?>
+			</label>
+			<input type="text" name="<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name" id="<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name" class="input" value="" size="25" autocomplete="off" />
+		</p>
+<?php
 	}
 
 	public static function analyze_request_uri(){
@@ -1178,7 +1265,7 @@ class tinyShield{
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Registration', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable reporting of user registration to tinyShield. We only send the IP address over to our servers for verification. Often times bots will try to register accounts to post spam or malicious links in posts. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable reporting of user registration issues to tinyShield. We only send the IP address over to our servers for verification. Often times bots will try to register accounts to post spam or malicious links in posts. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_user_registration]" id="options[report_user_registration]" <?php echo ($options['report_user_registration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_registration]"><?php _e('Report User Registration?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Enumeration Attempts', 'tinyshield'); ?></h3>
