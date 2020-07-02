@@ -69,7 +69,7 @@ class tinyShield{
 		add_action('register_post', 'tinyShield::registration_form_check');
 		add_action('login_form_register', 'tinyShield::registration_form_check');
 		add_action('register_form', 'tinyShield::display_registration_honeypot', 99);
-		add_action('login_head', 'tinyShield::registration_style');
+		add_action('login_head', 'tinyShield::registration_style', 99);
 	}
 
 	public static function notices(){
@@ -160,7 +160,7 @@ class tinyShield{
 				'report_user_registration' => true,
 				'report_user_enumeration' => true,
 				'registration_form_honeypot' => true,
-				'registration_form_honeypot_key' => substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyz'), 0, 10),
+				'registration_form_honeypot_key' => substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 10),
 				'report_404' => false,
 				'report_uri' => false,
 				'pretty_deny' => true,
@@ -704,8 +704,8 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 
 		if($options['registration_form_honeypot']){
-			if(isset($_POST[$options['registration_form_honeypot_key']]) && !empty($_POST[$options['registration_form_honeypot_key']])){
-				if(!$options['tinyshield_disabled'] && self::incoming_maybe_block()){
+			if(isset($_POST[$options['registration_form_honeypot_key'] . '_name']) && !empty($_POST[$options['registration_form_honeypot_key'] . '_name'])){
+				if(!$options['tinyshield_disabled']){
 
 					//if user registration is enabled
 					if($options['report_user_registration']){
@@ -743,14 +743,14 @@ class tinyShield{
 	public static function registration_style(){
 		$options = get_option('tinyshield_options');
 ?>
-		<style type="text/css">.<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name_field { display: none; }</style>
+		<style type="text/css">p.<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name_field { display: none; !important}</style>
 <?php
 	}
 
 	public static function registration_scripts(){
 		$options = get_option('tinyshield_options');
 ?>
-		<script type="text/javascript">jQuery( '#<?php esc_attr_e($options['registration_form_honeypot_key']); ?> ?>_name' ).val( '' );</script>
+		<script type="text/javascript">jQuery('#<?php esc_attr_e($options['registration_form_honeypot_key']); ?>_name').val('');</script>
 <?php
 	}
 
