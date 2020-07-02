@@ -1272,6 +1272,10 @@ class tinyShield{
 							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_user_enumeration]" id="options[report_user_enumeration]" <?php echo ($options['report_user_enumeration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_enumeration]"><?php _e('Report User Enumeration Attempts?', 'tinyshield'); ?></label></p>
 
+							<h3><?php _e('Enable the Registration Form honeypot?', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable a hidden honeypot field on the user registration page. Spambots will often try to create fake users, this will help prevent that. <strong>Enabled by default.</strong></p>
+							<p><input type="checkbox" name="options[registration_form_honeypot]" id="options[registration_form_honeypot]" <?php echo ($options['registration_form_honeypot']) ? 'checked' : 'unchecked' ?> /> <label for="options[registration_form_honeypot]"><?php _e('Registration Honeypot?', 'tinyshield'); ?></label></p>
+
 							<h3><?php _e('Report 404', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting 404 requests to tinyShield. We do this to check for rapid succession 404s which will occur in scans of sites. <strong>Disabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_404]" id="options[report_404]" <?php echo ($options['report_404']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_404]"><?php _e('Report 404s?', 'tinyshield'); ?></label></p>
