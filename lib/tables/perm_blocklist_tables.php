@@ -4,14 +4,14 @@
 Author: Adam Sewell
 As Of: 0.4.0
 Date: 9/29/19
-Class: tinyShield_PermBlackList_Table
+Class: tinyShield_PermBlockList_Table
 ***********************************************/
 
 if(!class_exists('WP_List_Table')){
   require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
 }
 
-class tinyShield_PermBlackList_Table extends WP_List_Table{
+class tinyShield_PermBlockList_Table extends WP_List_Table{
 
 	function __construct(){
 		global $status, $page;
@@ -31,9 +31,9 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 	}
 
 	function column_ip_address($item){
-    $perm_blacklist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-blacklist-item');
+    $perm_blocklist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-blocklist-item');
 		$actions = array(
-			'delete' => sprintf('<a href="?page=%s&tab=perm-blacklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Blacklist</a>', $_REQUEST['page'], 'delete-perm-blacklist', $perm_blacklist_item_remove_nonce, $item['iphash'])
+			'delete' => sprintf('<a href="?page=%s&tab=perm-blocklist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent blocklist</a>', $_REQUEST['page'], 'delete-perm-blocklist', $perm_blocklist_item_remove_nonce, $item['iphash'])
 		);
 
     //Return the title contents
@@ -68,7 +68,7 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 
 	function prepare_items(){
 		global $wpdb;
-    $cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
+    $cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
 
 		$per_page = 25;
 
@@ -81,8 +81,8 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 		//massage data to conform to WordPress table standards
 		$data = array();
 
-		if(is_array($cached_perm_blacklist) && !empty($cached_perm_blacklist)){
-			foreach($cached_perm_blacklist as $iphash => $meta){
+		if(is_array($cached_perm_blocklist) && !empty($cached_perm_blocklist)){
+			foreach($cached_perm_blocklist as $iphash => $meta){
         $meta = json_decode($meta);
 				$data[] = array(
           'iphash' => $iphash,
@@ -121,4 +121,4 @@ class tinyShield_PermBlackList_Table extends WP_List_Table{
 		));
 
   }
-} //end of tinyShield_PermWhiteList_Table
+} //end of tinyShield_PermAllowlist_Table

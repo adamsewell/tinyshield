@@ -3,14 +3,14 @@
 Author: Adam Sewell
 As Of: 0.4.0
 Date: 9/29/19
-Class: tinyShield_WhiteList_Table
+Class: tinyShield_Allowlist_Table
 ***********************************************/
 
 if(!class_exists('WP_List_Table')){
   require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
 }
 
-class tinyShield_WhiteList_Table extends WP_List_Table{
+class tinyShield_Allowlist_Table extends WP_List_Table{
 
 	function __construct(){
 		global $status, $page;
@@ -30,14 +30,14 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
 	}
 
 	function column_ip_address($item){
-    $move_item_to_perm_whitelist_nonce = wp_create_nonce('tinyshield-move-item-perm-whitelist');
-    $move_item_to_blacklist_nonce = wp_create_nonce('tinyshield-move-item-blacklist');
-    $whitelist_item_remove_nonce = wp_create_nonce('tinyshield-delete-whitelist-item');
+    $move_item_to_perm_allowlist_nonce = wp_create_nonce('tinyshield-move-item-perm-allowlist');
+    $move_item_to_blocklist_nonce = wp_create_nonce('tinyshield-move-item-blocklist');
+    $allowlist_item_remove_nonce = wp_create_nonce('tinyshield-delete-allowlist-item');
 
 		$actions = array(
-			'add_to_perm_whitelist' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s">Permanent Whitelist</a>',$_REQUEST['page'], 'add_to_perm_whitelist', $move_item_to_perm_whitelist_nonce, $item['iphash']),
-      'add_to_blacklist' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s">Blacklist</a>',$_REQUEST['page'], 'add_to_blacklist', $move_item_to_blacklist_nonce, $item['iphash']),
-      'delete' => sprintf('<a href="?page=%s&tab=whitelist&action=%s&_wpnonce=%s&iphash=%s">Remove from Whitelist</a>', $_REQUEST['page'], 'remove_from_whitelist', $whitelist_item_remove_nonce, $item['iphash'])
+			'add_to_perm_allowlist' => sprintf('<a href="?page=%s&tab=allowlist&action=%s&_wpnonce=%s&iphash=%s">Permanent Allowlist</a>',$_REQUEST['page'], 'add_to_perm_allowlist', $move_item_to_perm_allowlist_nonce, $item['iphash']),
+      'add_to_blocklist' => sprintf('<a href="?page=%s&tab=allowlist&action=%s&_wpnonce=%s&iphash=%s">blocklist</a>',$_REQUEST['page'], 'add_to_blocklist', $move_item_to_blocklist_nonce, $item['iphash']),
+      'delete' => sprintf('<a href="?page=%s&tab=allowlist&action=%s&_wpnonce=%s&iphash=%s">Remove from Allowlist</a>', $_REQUEST['page'], 'remove_from_allowlist', $allowlist_item_remove_nonce, $item['iphash'])
 		);
 
     //Return the title contents
@@ -74,7 +74,7 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
 	}
 
 	function prepare_items(){
-    $cached_whitelist = get_option('tinyshield_cached_whitelist');
+    $cached_allowlist = get_option('tinyshield_cached_allowlist');
 
 		$per_page = 25;
 
@@ -87,8 +87,8 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
 		//massage data to conform to WordPress table standards
 		$data = array();
 
-    if(is_array($cached_whitelist) && !empty($cached_whitelist)){
-			foreach($cached_whitelist as $iphash => $iphash_data){
+    if(is_array($cached_allowlist) && !empty($cached_allowlist)){
+			foreach($cached_allowlist as $iphash => $iphash_data){
         $iphash_data = json_decode($iphash_data);
 
 				$data[] = array(
@@ -132,4 +132,4 @@ class tinyShield_WhiteList_Table extends WP_List_Table{
 		));
 
   }
-} //end of tinyShield_WhiteList_Table
+} //end of tinyShield_Allowlist_Table

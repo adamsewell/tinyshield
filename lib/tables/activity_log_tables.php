@@ -31,13 +31,13 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 
 	function column_ip_address($item){
     $report_false_postiive_nonce = wp_create_nonce('tinyshield-report-false-positive');
-    $move_item_to_whitelist_nonce = wp_create_nonce('tinyshield-move-item-whitelist');
-    $move_item_to_blacklist_nonce = wp_create_nonce('tinyshield-move-item-blacklist');
+    $move_item_to_allowlist_nonce = wp_create_nonce('tinyshield-move-item-allowlist');
+    $move_item_to_blocklist_nonce = wp_create_nonce('tinyshield-move-item-blocklist');
 
 		$actions = array(
 			'report_false_positive' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s"> Report</a>', $_REQUEST['page'], 'report_false_positive', $report_false_postiive_nonce, $item['iphash']),
-      'add_to_whitelist' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Whitelist</a>', $_REQUEST['page'], 'add_to_whitelist', $move_item_to_whitelist_nonce, $item['iphash']),
-      'delete' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Blacklist</a>', $_REQUEST['page'], 'add_to_blacklist', $move_item_to_blacklist_nonce, $item['iphash']),
+      'add_to_allowlist' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Allowlist</a>', $_REQUEST['page'], 'add_to_allowlist', $move_item_to_allowlist_nonce, $item['iphash']),
+      'delete' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">blocklist</a>', $_REQUEST['page'], 'add_to_blocklist', $move_item_to_blocklist_nonce, $item['iphash']),
 		);
 
     //Return the title contents
@@ -77,8 +77,8 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 	}
 
 	function prepare_items(){
-    $cached_whitelist = get_option('tinyshield_cached_whitelist');
-    $cached_blacklist = get_option('tinyshield_cached_blacklist');
+    $cached_allowlist = get_option('tinyshield_cached_allowlist');
+    $cached_blocklist = get_option('tinyshield_cached_blocklist');
     $action_messages = array('allow' => '✅', 'block' => '⛔');
     $direction_icons = array('outbound' => 'Outbound', 'inbound' => 'Inbound');
 
@@ -93,7 +93,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 		//massage data to conform to WordPress table standards
 		$data = array();
 
-    $logs = $cached_blacklist + $cached_whitelist;
+    $logs = $cached_blocklist + $cached_allowlist;
 
     if(is_array($logs) && !empty($logs)){
 			foreach($logs as $iphash => $iphash_data){
@@ -141,4 +141,4 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 		));
 
   }
-} //end of tinyShield_WhiteList_Table
+} //end of tinyShield_Allowlist_Table

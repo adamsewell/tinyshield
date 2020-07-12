@@ -4,14 +4,14 @@
 Author: Adam Sewell
 As Of: 0.1.4
 Date: 9/3/18
-Class: tinyShield_PermWhiteList_Table
+Class: tinyShield_PermAllowlist_Table
 ***********************************************/
 
 if(!class_exists('WP_List_Table')){
   require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
 }
 
-class tinyShield_PermWhiteList_Table extends WP_List_Table{
+class tinyShield_PermAllowlist_Table extends WP_List_Table{
 
 	function __construct(){
 		global $status, $page;
@@ -31,9 +31,9 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 	}
 
 	function column_ip_address($item){
-    $perm_whitelist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-whitelist-item');
+    $perm_allowlist_item_remove_nonce = wp_create_nonce('delete-tinyshield-perm-allowlist-item');
 		$actions = array(
-			'delete' => sprintf('<a href="?page=%s&tab=perm-whitelist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Whitelist</a>', $_REQUEST['page'], 'delete-perm-whitelist', $perm_whitelist_item_remove_nonce, $item['iphash'])
+			'delete' => sprintf('<a href="?page=%s&tab=perm-allowlist&action=%s&_wpnonce=%s&iphash=%s">Remove from Permanent Allowlist</a>', $_REQUEST['page'], 'delete-perm-allowlist', $perm_allowlist_item_remove_nonce, $item['iphash'])
 		);
 
     //Return the title contents
@@ -67,7 +67,7 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 	}
 
 	function prepare_items(){
-    $cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
+    $cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
 		$per_page = 25;
 
 		$columns = $this->get_columns();
@@ -79,8 +79,8 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 		//massage data to conform to WordPress table standards
 		$data = array();
 
-		if(is_array($cached_perm_whitelist) && !empty($cached_perm_whitelist)){
-			foreach($cached_perm_whitelist as $sha1 => $meta){
+		if(is_array($cached_perm_allowlist) && !empty($cached_perm_allowlist)){
+			foreach($cached_perm_allowlist as $sha1 => $meta){
         $meta = json_decode($meta);
 				$data[] = array(
 					'iphash' => $sha1,
@@ -119,4 +119,4 @@ class tinyShield_PermWhiteList_Table extends WP_List_Table{
 		));
 
   }
-} //end of tinyShield_PermWhiteList_Table
+} //end of tinyShield_PermAllowlist_Table

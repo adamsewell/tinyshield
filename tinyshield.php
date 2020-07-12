@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.5.4
+Version: 0.5.5
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -23,11 +23,11 @@ Author URI: https://tinyshield.me
 
 if(!defined('ABSPATH')) die();
 
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/blacklist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/whitelist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/blocklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/allowlist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/activity_log_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_whitelist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blacklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_allowlist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blocklist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
 
 class tinyShield{
@@ -62,7 +62,7 @@ class tinyShield{
 		//hook into the failed login attempts and report back
 		add_action('wp_login_failed', 'tinyShield::log_failed_login');
 
-		//hooks into the user registration process and checks our blacklist
+		//hooks into the user registration process and checks our blocklist
 		add_filter('registration_errors', 'tinyShield::log_user_registration', 10, 3);
 
 		//adds honeypot to registration form
@@ -139,10 +139,10 @@ class tinyShield{
 		if(function_exists('add_menu_page')){
 			add_menu_page('tinyShield', 'tinyShield', 'manage_options', basename(__FILE__), 'tinyShield::display_options', plugin_dir_url(__FILE__) . 'img/tinyshield.png');
 			add_submenu_page(basename(__FILE__), 'tinyShield', 'Activity Log', 'manage_options', basename(__FILE__), 'tinyShield::display_options');
-			add_submenu_page(basename(__FILE__), 'Permanent Whitelist', 'Permanent Whitelist', 'manage_options', 'tinyshield.php&tab=perm-whitelist', 'tinyShield::display_options');
-			add_submenu_page(basename(__FILE__), 'Permanent Blacklist', 'Permanent Blacklist', 'manage_options', 'tinyshield.php&tab=perm-blacklist', 'tinyShield::display_options');
-			add_submenu_page(basename(__FILE__), 'Whitelist', 'Whitelist', 'manage_options', 'tinyshield.php&tab=whitelist', 'tinyShield::display_options');
-			add_submenu_page(basename(__FILE__), 'Blacklist', 'Blacklist', 'manage_options', 'tinyshield.php&tab=blacklist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Permanent Allowlist', 'Permanent Allowlist', 'manage_options', 'tinyshield.php&tab=perm-allowlist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Permanent Blocklist', 'Permanent Blocklist', 'manage_options', 'tinyshield.php&tab=perm-blocklist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Allowlist', 'Allowlist', 'manage_options', 'tinyshield.php&tab=allowlist', 'tinyShield::display_options');
+			add_submenu_page(basename(__FILE__), 'Blocklist', 'Blocklist', 'manage_options', 'tinyshield.php&tab=blocklist', 'tinyShield::display_options');
 			add_submenu_page(basename(__FILE__), 'Settings', 'Settings', 'manage_options', 'tinyshield.php&tab=settings', 'tinyShield::display_options');
 		}
 	}
@@ -150,7 +150,7 @@ class tinyShield{
 	public static function update_options(){
 		if(current_user_can('manage_options')){
 			$options = get_option('tinyshield_options');
-			$cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
+			$cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
 
 			$default_options = array(
 				'subscription' => 'community',
@@ -172,20 +172,20 @@ class tinyShield{
 
 			//upgrade 0.3.x to 0.4.x+
 			if(!isset($options['db_version'])){
-				$cached_blacklist = get_option('tinyshield_cached_blacklist');
-				$cached_whitelist = get_option('tinyshield_cached_whitelist');
-				$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
+				$cached_blocklist = get_option('tinyshield_cached_blocklist');
+				$cached_allowlist = get_option('tinyshield_cached_allowlist');
+				$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
 
 
-				//update cached white and black lists
-				update_option('tinyshield_cached_blacklist', array());
-				update_option('tinyshield_cached_whitelist', array());
+				//update cached allow and block lists
+				update_option('tinyshield_cached_blocklist', array());
+				update_option('tinyshield_cached_allowlist', array());
 
 				//upgrade permanent lists
-				if(is_array($cached_perm_blacklist) && !empty($cached_perm_blacklist)){
+				if(is_array($cached_perm_blocklist) && !empty($cached_perm_blocklist)){
 					$updated_array = array();
 
-					foreach($cached_perm_blacklist as $key => $entry){
+					foreach($cached_perm_blocklist as $key => $entry){
 						if(is_int($key)){
 							$ip = long2ip($key);
 							$meta = json_decode($entry);
@@ -197,13 +197,13 @@ class tinyShield{
 						}
 					}
 
-					update_option('tinyshield_cached_perm_blacklist', $updated_array);
+					update_option('tinyshield_cached_perm_blocklist', $updated_array);
 				}
 
-				if(is_array($cached_perm_whitelist) && !empty($cached_perm_whitelist)){
+				if(is_array($cached_perm_allowlist) && !empty($cached_perm_allowlist)){
 					$updated_array = array();
 
-					foreach($cached_perm_whitelist as $key => $entry){
+					foreach($cached_perm_allowlist as $key => $entry){
 						if(is_int($key)){
 							$ip = long2ip($key);
 							$meta = json_decode($entry);
@@ -215,7 +215,7 @@ class tinyShield{
 						}
 					}
 
-					update_option('tinyshield_cached_perm_whitelist', $updated_array);
+					update_option('tinyshield_cached_perm_allowlist', $updated_array);
 				}
 			}
 
@@ -226,9 +226,9 @@ class tinyShield{
 				update_option('tinyshield_options', $merged_options);
 			}
 
-			if(!is_array($cached_perm_blacklist)){
-				$cached_perm_blacklist = array();
-				update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+			if(!is_array($cached_perm_blocklist)){
+				$cached_perm_blocklist = array();
+				update_option('tinyshield_cached_perm_blocklist', $cached_perm_blocklist);
 			}
 		}
 	}
@@ -243,36 +243,36 @@ class tinyShield{
 			wp_die('tinyShield is not compatible with WordPress multisite... yet.');
 		}
 
-		$cached_blacklist = get_option('tinyshield_cached_blacklist');
-		$cached_whitelist = get_option('tinyshield_cached_whitelist');
-		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
-		$cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
+		$cached_blocklist = get_option('tinyshield_cached_blocklist');
+		$cached_allowlist = get_option('tinyshield_cached_allowlist');
+		$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
+		$cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
 
 		self::update_options();
 
-		if(!is_array($cached_blacklist)){
-			$cached_blacklist = array();
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+		if(!is_array($cached_blocklist)){
+			$cached_blocklist = array();
+			update_option('tinyshield_cached_blocklist', $cached_blocklist);
 		}
 
-		if(!is_array($cached_perm_blacklist)){
-			$cached_perm_blacklist = array();
-			update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+		if(!is_array($cached_perm_blocklist)){
+			$cached_perm_blocklist = array();
+			update_option('tinyshield_cached_perm_blocklist', $cached_perm_blocklist);
 		}
 
-		if(!is_array($cached_perm_whitelist)){
-			$cached_perm_whitelist = array();
+		if(!is_array($cached_perm_allowlist)){
+			$cached_perm_allowlist = array();
 
-			$perm_whitelist_entry = new stdClass();
-			$perm_whitelist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+			$perm_allowlist_entry = new stdClass();
+			$perm_allowlist_entry->expires = strtotime('+30 years', current_time('timestamp'));
 
-			$cached_perm_whitelist[sha1(self::get_valid_ip())] = json_encode($perm_whitelist_entry);
-			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
+			$cached_perm_allowlist[sha1(self::get_valid_ip())] = json_encode($perm_allowlist_entry);
+			update_option('tinyshield_cached_perm_allowlist', $cached_perm_allowlist);
 		}
 
-		if(!is_array($cached_whitelist)){
-			$cached_whitelist = array();
-			update_option('tinyshield_cached_whitelist', $cached_whitelist);
+		if(!is_array($cached_allowlist)){
+			$cached_allowlist = array();
+			update_option('tinyshield_cached_allowlist', $cached_allowlist);
 		}
 
 	}
@@ -285,34 +285,34 @@ class tinyShield{
 		}
 
 		//bypass known good hosts
-		$whitelisted_domains = array(
+		$allowlisted_domains = array(
 			'endpoint.tinyshield.me',
 			'api.wordpress.org',
 			'downloads.wordpress.org',
 			parse_url(get_bloginfo('url'), PHP_URL_HOST)
 		);
 
-		if(in_array($host, $whitelisted_domains)){
+		if(in_array($host, $allowlisted_domains)){
 			return $pre;
 		}
 
 		$ip = gethostbyname($host);
-		$cached_blacklist = get_option('tinyshield_cached_blacklist');
+		$cached_blocklist = get_option('tinyshield_cached_blocklist');
 
-		if(!empty($cached_blacklist) && array_key_exists(sha1($ip), $cached_blacklist)){
-			$blacklist_data = json_decode($cached_blacklist[sha1($ip)]);
-			if(is_object($blacklist_data)){
-				$blacklist_data->last_attempt = current_time('timestamp');
+		if(!empty($cached_blocklist) && array_key_exists(sha1($ip), $cached_blocklist)){
+			$blocklist_data = json_decode($cached_blocklist[sha1($ip)]);
+			if(is_object($blocklist_data)){
+				$blocklist_data->last_attempt = current_time('timestamp');
 
-				$cached_blacklist[sha1($ip)] = json_encode($blacklist_data);
-				update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				$cached_blocklist[sha1($ip)] = json_encode($blocklist_data);
+				update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
 				return true;
 			}
 		}
 
 		if($result = self::check_ip($ip, 'outbound', $host)){
-			self::write_log('tinyShield: outbound remote blacklist lookup: ' . $ip);
+			self::write_log('tinyShield: outbound remote blocklist lookup: ' . $ip);
 
 			return true;
 		}
@@ -349,56 +349,56 @@ class tinyShield{
 
 		self::clean_up_lists();
 
-		//check if valid ip and check the local whitelist
+		//check if valid ip and check the local allowlist
 		if(tinyShieldFunctions::is_activated() && $ip && !is_user_logged_in()){
 
-			//check local perm whitelist
-			$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
-			if(!empty($cached_perm_whitelist) && array_key_exists(sha1($ip), $cached_perm_whitelist)){
-				self::write_log('tinyShield: incoming ip found in local perm whitelist and was allowed: ' . $ip);
+			//check local perm allowlist
+			$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
+			if(!empty($cached_perm_allowlist) && array_key_exists(sha1($ip), $cached_perm_allowlist)){
+				self::write_log('tinyShield: incoming ip found in local perm allowlist and was allowed: ' . $ip);
 				return false;
 			}
 
-			//check local perm blacklist
-			$cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
-			if(!empty($cached_perm_blacklist) && array_key_exists(sha1($ip), $cached_perm_blacklist)){
-				self::write_log('tinyShield: incoming ip found in local perm blacklist and was blocked: ' . $ip);
+			//check local perm blocklist
+			$cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
+			if(!empty($cached_perm_blocklist) && array_key_exists(sha1($ip), $cached_perm_blocklist)){
+				self::write_log('tinyShield: incoming ip found in local perm blocklist and was blocked: ' . $ip);
 				return true;
 			}
 
-			//check local cached whitelist
-			$cached_whitelist = get_option('tinyshield_cached_whitelist');
-			if(!empty($cached_whitelist) && array_key_exists(sha1($ip), $cached_whitelist)){
+			//check local cached allowlist
+			$cached_allowlist = get_option('tinyshield_cached_allowlist');
+			if(!empty($cached_allowlist) && array_key_exists(sha1($ip), $cached_allowlist)){
 
-				$data = json_decode($cached_whitelist[sha1($ip)]);
+				$data = json_decode($cached_allowlist[sha1($ip)]);
 				if(is_object($data)){
 					$data->last_attempt = current_time('timestamp');
 
-					$cached_whitelist[sha1($ip)] = json_encode($data);
-					update_option('tinyshield_cached_whitelist', $cached_whitelist);
+					$cached_allowlist[sha1($ip)] = json_encode($data);
+					update_option('tinyshield_cached_allowlist', $cached_allowlist);
 
-					self::write_log('tinyShield: incoming ip found in local whitelist and was allowed: ' . $ip);
+					self::write_log('tinyShield: incoming ip found in local allowlist and was allowed: ' . $ip);
 					return false;
 				}
 			}
 
-			//check local cached blacklist
-			$cached_blacklist = get_option('tinyshield_cached_blacklist');
-			if(!empty($cached_blacklist) && array_key_exists(sha1($ip), $cached_blacklist)){
+			//check local cached blocklist
+			$cached_blocklist = get_option('tinyshield_cached_blocklist');
+			if(!empty($cached_blocklist) && array_key_exists(sha1($ip), $cached_blocklist)){
 
-				$blacklist_data = json_decode($cached_blacklist[sha1($ip)]);
-				if(is_object($blacklist_data)){
-					$blacklist_data->last_attempt = current_time('timestamp');
-					$cached_blacklist[sha1($ip)] = json_encode($blacklist_data);
-					update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				$blocklist_data = json_decode($cached_blocklist[sha1($ip)]);
+				if(is_object($blocklist_data)){
+					$blocklist_data->last_attempt = current_time('timestamp');
+					$cached_blocklist[sha1($ip)] = json_encode($blocklist_data);
+					update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
-					self::write_log('tinyShield: ip blocked from local cached blacklist: ' . $ip);
+					self::write_log('tinyShield: ip blocked from local cached blocklist: ' . $ip);
 					return true;
 				}
 			}
 
 			//ip does not exist locally at all, remote lookup needed
-			self::write_log('tinyShield: incoming remote blacklist lookup: ' . $ip);
+			self::write_log('tinyShield: incoming remote blocklist lookup: ' . $ip);
 			if(self::check_ip($ip)){
 				return true;
 			}
@@ -409,8 +409,8 @@ class tinyShield{
 
 	private static function check_ip($ip, $direction = 'inbound', $domain = ''){
 		$options = get_option('tinyshield_options');
-		$cached_blacklist = get_option('tinyshield_cached_blacklist');
-		$cached_whitelist = get_option('tinyshield_cached_whitelist');
+		$cached_blocklist = get_option('tinyshield_cached_blocklist');
+		$cached_allowlist = get_option('tinyshield_cached_allowlist');
 
 		$response = wp_remote_post(
 			self::$tinyshield_check_url . '/' . $ip,
@@ -426,7 +426,7 @@ class tinyShield{
 		$response_body = wp_remote_retrieve_body($response);
 
 		if(!is_wp_error($response)){
-			self::write_log('tinyShield: remote blacklist lookup response');
+			self::write_log('tinyShield: remote blocklist lookup response');
 			self::write_log('tinyShield: ' . $response_body);
 
 			if(!empty($response_body)){
@@ -457,8 +457,8 @@ class tinyShield{
 							$list_data->called_domain = $domain;
 						}
 
-						$cached_blacklist[sha1($ip)] = json_encode($list_data);
-						update_option('tinyshield_cached_blacklist', $cached_blacklist);
+						$cached_blocklist[sha1($ip)] = json_encode($list_data);
+						update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
 						return true;
 
@@ -469,9 +469,9 @@ class tinyShield{
 						if($domain){
 							$list_data->called_domain = $domain;
 						}
-						$cached_whitelist[sha1($ip)] = json_encode($list_data);
+						$cached_allowlist[sha1($ip)] = json_encode($list_data);
 
-						update_option('tinyshield_cached_whitelist', $cached_whitelist);
+						update_option('tinyshield_cached_allowlist', $cached_allowlist);
 						return false;
 					}
 				}
@@ -485,26 +485,26 @@ class tinyShield{
 	}
 
 	private static function clean_up_lists(){
-		$cached_blacklist = get_option('tinyshield_cached_blacklist');
-		$cached_whitelist = get_option('tinyshield_cached_whitelist');
+		$cached_blocklist = get_option('tinyshield_cached_blocklist');
+		$cached_allowlist = get_option('tinyshield_cached_allowlist');
 
-		foreach($cached_blacklist as $iphash => $iphash_data){
+		foreach($cached_blocklist as $iphash => $iphash_data){
 			$iphash_data = json_decode($iphash_data);
 			if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
-				unset($cached_blacklist[$iphash]);
+				unset($cached_blocklist[$iphash]);
 			}
 
 		}
 
-		foreach($cached_whitelist as $iphash => $iphash_data){
+		foreach($cached_allowlist as $iphash => $iphash_data){
 			$iphash_data = json_decode($iphash_data);
 			if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
-				unset($cached_whitelist[$iphash]);
+				unset($cached_allowlist[$iphash]);
 			}
 		}
 
-		update_option('tinyshield_cached_whitelist', $cached_whitelist);
-		update_option('tinyshield_cached_blacklist', $cached_blacklist);
+		update_option('tinyshield_cached_allowlist', $cached_allowlist);
+		update_option('tinyshield_cached_blocklist', $cached_blocklist);
 	}
 
 	private static function get_valid_ip(){
@@ -803,10 +803,10 @@ class tinyShield{
 		}
 
 		$options = get_option('tinyshield_options');
-		$cached_blacklist = get_option('tinyshield_cached_blacklist');
-		$cached_whitelist = get_option('tinyshield_cached_whitelist');
-		$cached_perm_whitelist = get_option('tinyshield_cached_perm_whitelist');
-		$cached_perm_blacklist = get_option('tinyshield_cached_perm_blacklist');
+		$cached_blocklist = get_option('tinyshield_cached_blocklist');
+		$cached_allowlist = get_option('tinyshield_cached_allowlist');
+		$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
+		$cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
 
 		$errors = '';
 		$alerts = '';
@@ -815,9 +815,9 @@ class tinyShield{
 			'site_key_activated' => __('Your site is now activated!', 'tinyshield'),
 			'site_key_deactivated' => __('Site Key Deactivated', 'tinyshield'),
 			'settings_updated' => __('Settings Updated', 'tinyshield'),
-			'blacklist_cleared' => __('Local Blacklist Has Been Cleared', 'tinyshield'),
-			'perm_blacklist_cleared' => __('Permanent Blacklist Has Been Cleared', 'tinyshield'),
-			'whitelist_cleared' => __('Local Whitelist Has Been Cleared', 'tinyshield'),
+			'blocklist_cleared' => __('Local Blocklist Has Been Cleared', 'tinyshield'),
+			'perm_blocklist_cleared' => __('Permanent Blocklist Has Been Cleared', 'tinyshield'),
+			'allowlist_cleared' => __('Local Allowlist Has Been Cleared', 'tinyshield'),
 			'reported_false_positive' => __('Your report has been logged. Thanks for reporting, we\'ll check it out!', 'tinyshield')
 		);
 
@@ -911,33 +911,33 @@ class tinyShield{
 		}
 
 		/*****************************************
-			Handle clearing of local blacklist
+			Handle clearing of local blocklist
 		*****************************************/
-		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_blacklist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-blacklist')){
-			$cached_blacklist = array();
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_blocklist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-blocklist')){
+			$cached_blocklist = array();
+			update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
-			$alerts = $success_messages['blacklist_cleared'];
+			$alerts = $success_messages['blocklist_cleared'];
 		}
 
 		/*****************************************
-			Handle clearing of local whitelist
+			Handle clearing of local allowlist
 		*****************************************/
-		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_whitelist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-whitelist')){
-			$cached_whitelist = array();
-			update_option('tinyshield_cached_whitelist', $cached_whitelist);
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_allowlist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-allowlist')){
+			$cached_allowlist = array();
+			update_option('tinyshield_cached_allowlist', $cached_allowlist);
 
-			$alerts = $success_messages['whitelist_cleared'];
+			$alerts = $success_messages['allowlist_cleared'];
 		}
 
 		/*****************************************
-			Handle clearing of permanent blacklist
+			Handle clearing of permanent blocklist
 		*****************************************/
-		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_permanent_blacklist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-permanent-blacklist')){
-			$cached_perm_blacklist = array();
-			update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_permanent_blocklist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-permanent-blocklist')){
+			$cached_perm_blocklist = array();
+			update_option('tinyshield_cached_perm_blocklist', $cached_perm_blocklist);
 
-			$alerts = $success_messages['perm_blacklist_cleared'];
+			$alerts = $success_messages['perm_blocklist_cleared'];
 		}
 
 		/*****************************************
@@ -945,13 +945,13 @@ class tinyShield{
 		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'report_false_positive' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-report-false-positive')){
 
-			if(!empty($cached_whitelist[$_GET['iphash']])){
-				$meta = json_decode($cached_whitelist[$_GET['iphash']]);
+			if(!empty($cached_allowlist[$_GET['iphash']])){
+				$meta = json_decode($cached_allowlist[$_GET['iphash']]);
 				if(is_object($meta)){
 					$ip_to_report = $meta->ip_address;
 				}
-			}elseif(!empty($cached_blacklist[$_GET['iphash']])){
-				$meta = json_decode($cached_blacklist[$_GET['iphash']]);
+			}elseif(!empty($cached_blocklist[$_GET['iphash']])){
+				$meta = json_decode($cached_blocklist[$_GET['iphash']]);
 				if(is_object($meta)){
 					$ip_to_report = $meta->ip_address;
 				}
@@ -982,17 +982,17 @@ class tinyShield{
 		}
 
 		/*****************************************
-			Add Custom IP to Permanent Whitelist Action
+			Add Custom IP to Permanent Allowlist Action
 		******************************************/
-		if(isset($_POST['tinyshield_perm_whitelist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-whitelist') && !empty($_POST['perm_ip_to_whitelist'])){
-				$ips = array_filter(array_map('trim', explode("\r\n", $_POST['perm_ip_to_whitelist'])));
+		if(isset($_POST['tinyshield_perm_allowlist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-allowlist') && !empty($_POST['perm_ip_to_allowlist'])){
+				$ips = array_filter(array_map('trim', explode("\r\n", $_POST['perm_ip_to_allowlist'])));
 
 				foreach($ips as $ip){
 					if(!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
-						$perm_whitelist_entry = new stdClass();
-						$perm_whitelist_entry->expires = strtotime('+30 years', current_time('timestamp'));
-						$perm_whitelist_entry->ip_address = $ip;
-						$cached_perm_whitelist[sha1($ip)] = json_encode($perm_whitelist_entry);
+						$perm_allowlist_entry = new stdClass();
+						$perm_allowlist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+						$perm_allowlist_entry->ip_address = $ip;
+						$cached_perm_allowlist[sha1($ip)] = json_encode($perm_allowlist_entry);
 					}else{
 						$invalid_ip = true;
 					}
@@ -1003,28 +1003,28 @@ class tinyShield{
 					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', 'tinyshield');?></strong></p></div>
 <?php
 				}else{
-					update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
+					update_option('tinyshield_cached_perm_allowlist', $cached_perm_allowlist);
 ?>
-					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Whitelist', 'tinyshield');?></strong></p></div>
+					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Allowlist', 'tinyshield');?></strong></p></div>
 <?php
 				}
 		}
 
 		/*****************************************
-			Add Custom IP to Permanent Blacklist Action
+			Add Custom IP to Permanent Blocklist Action
 		******************************************/
-		if(isset($_POST['tinyshield_perm_blacklist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-blacklist') && !empty($_POST['perm_ip_to_blacklist'])){
-				$ips = array_filter(array_map('trim', explode("\r\n", $_POST['perm_ip_to_blacklist'])));
+		if(isset($_POST['tinyshield_perm_blocklist_update']) && wp_verify_nonce($_POST['_wpnonce'], 'update-tinyshield-perm-blocklist') && !empty($_POST['perm_ip_to_blocklist'])){
+				$ips = array_filter(array_map('trim', explode("\r\n", $_POST['perm_ip_to_blocklist'])));
 
 				foreach($ips as $ip){
 					if(!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
-						$perm_blacklist_entry = new stdClass();
-						$perm_blacklist_entry->expires = strtotime('+30 years', current_time('timestamp'));
-						$perm_blacklist_entry->ip_address = $ip;
-						$cached_perm_blacklist[sha1($ip)] = json_encode($perm_blacklist_entry);
+						$perm_blocklist_entry = new stdClass();
+						$perm_blocklist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+						$perm_blocklist_entry->ip_address = $ip;
+						$cached_perm_blocklist[sha1($ip)] = json_encode($perm_blocklist_entry);
 
-						if(array_key_exists(sha1($ip), $cached_whitelist)){
-							unset($cached_whitelist[sha1($ip)]);
+						if(array_key_exists(sha1($ip), $cached_allowlist)){
+							unset($cached_allowlist[sha1($ip)]);
 						}
 
 					}else{
@@ -1037,119 +1037,119 @@ class tinyShield{
 					<div class="error"><p><strong><?php _e('Invalid IP detected. Please ensure all IP addresses are valid.', 'tinyshield');?></strong></p></div>
 <?php
 				}else{
-					update_option('tinyshield_cached_whitelist', $cached_whitelist);
-					update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+					update_option('tinyshield_cached_allowlist', $cached_allowlist);
+					update_option('tinyshield_cached_perm_blocklist', $cached_perm_blocklist);
 ?>
-					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Blacklist', 'tinyshield');?></strong></p></div>
+					<div class="updated"><p><strong><?php _e('IP Address has been added to the Permanent Blocklist', 'tinyshield');?></strong></p></div>
 <?php
 				}
 		}
 
 		/*****************************************
-		 	Delete Perm Blacklist Action
+		 	Delete Perm Blocklist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'delete-perm-blacklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'delete-tinyshield-perm-blacklist-item')){
-			unset($cached_perm_blacklist[$_GET['iphash']]);
-			update_option('tinyshield_cached_perm_blacklist', $cached_perm_blacklist);
+		if(isset($_GET['action']) && $_GET['action'] == 'delete-perm-blocklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'delete-tinyshield-perm-blocklist-item')){
+			unset($cached_perm_blocklist[$_GET['iphash']]);
+			update_option('tinyshield_cached_perm_blocklist', $cached_perm_blocklist);
 ?>
-			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Blacklist', 'tinyshield');?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Blocklist', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
 		/*****************************************
-		 	Delete Perm Whitelist Action
+		 	Delete Perm Allowlist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'delete-perm-whitelist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'delete-tinyshield-perm-whitelist-item')){
-			unset($cached_perm_whitelist[$_GET['iphash']]);
-			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
+		if(isset($_GET['action']) && $_GET['action'] == 'delete-perm-allowlist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'delete-tinyshield-perm-allowlist-item')){
+			unset($cached_perm_allowlist[$_GET['iphash']]);
+			update_option('tinyshield_cached_perm_allowlist', $cached_perm_allowlist);
 ?>
-			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Whitelist', 'tinyshield');?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('IP Address has been removed from the Permanent Allowlist', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
 		/*****************************************
-		 	Move to Blacklist Action
+		 	Move to Blocklist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'add_to_blacklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-blacklist')){
-			$new_bl_item = json_decode($cached_whitelist[$_GET['iphash']]);
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_blocklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-blocklist')){
+			$new_bl_item = json_decode($cached_allowlist[$_GET['iphash']]);
 			if(is_object($new_bl_item)){
 				$new_bl_item->action = 'block';
 				$new_bl_item->date_added = current_time('timestamp');
 				$new_bl_item->expires = strtotime('+24 hours', current_time('timestamp'));
 
-				$cached_blacklist[$_GET['iphash']] = json_encode($new_bl_item);
+				$cached_blocklist[$_GET['iphash']] = json_encode($new_bl_item);
 
-				unset($cached_whitelist[$_GET['iphash']]);
+				unset($cached_allowlist[$_GET['iphash']]);
 
-				update_option('tinyshield_cached_whitelist', $cached_whitelist);
-				update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				update_option('tinyshield_cached_allowlist', $cached_allowlist);
+				update_option('tinyshield_cached_blocklist', $cached_blocklist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Blacklist for 24 hours.', 'tinyshield');?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Blocklist for 24 hours.', 'tinyshield');?></strong></p></div>
 <?php
 			}
 		}
 
 		/*****************************************
-		 	Move to Perm Whitelist Action
+		 	Move to Perm Allowlist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'add_to_perm_whitelist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-perm-whitelist')){
-			if(!empty($cached_whitelist[$_GET['iphash']])){
-				$cached_perm_whitelist[$_GET['iphash']] = $cached_whitelist[$_GET['iphash']];
-				unset($cached_whitelist[$_GET['iphash']]);
-			}elseif(!empty($cached_blacklist[$_GET['iphash']])){
-				$cached_perm_whitelist[$_GET['iphash']] = $cached_blacklist[$_GET['iphash']];
-				unset($cached_blacklist[$_GET['iphash']]);
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_perm_allowlist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-perm-allowlist')){
+			if(!empty($cached_allowlist[$_GET['iphash']])){
+				$cached_perm_allowlist[$_GET['iphash']] = $cached_allowlist[$_GET['iphash']];
+				unset($cached_allowlist[$_GET['iphash']]);
+			}elseif(!empty($cached_blocklist[$_GET['iphash']])){
+				$cached_perm_allowlist[$_GET['iphash']] = $cached_blocklist[$_GET['iphash']];
+				unset($cached_blocklist[$_GET['iphash']]);
 			}
 
-			update_option('tinyshield_cached_perm_whitelist', $cached_perm_whitelist);
-			update_option('tinyshield_cached_whitelist', $cached_whitelist);
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+			update_option('tinyshield_cached_perm_allowlist', $cached_perm_allowlist);
+			update_option('tinyshield_cached_allowlist', $cached_allowlist);
+			update_option('tinyshield_cached_blocklist', $cached_blocklist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Permanent Whitelist.', 'tinyshield');?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been placed in the Permanent Allowlist.', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
 		/*****************************************
-			Delete IP Address from Blacklist Action
+			Delete IP Address from Blocklist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_blacklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-blacklist-item')){
-			unset($cached_blacklist[$_GET['iphash']]);
-			update_option('tinyshield_cached_blacklist', $cached_blacklist);
+		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_blocklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-blocklist-item')){
+			unset($cached_blocklist[$_GET['iphash']]);
+			update_option('tinyshield_cached_blocklist', $cached_blocklist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', 'tinyshield');?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blocklist. If this IP is trys to connect to your site again, it will be rechecked.', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
 		/*****************************************
-			Move to Whitelist Action
+			Move to Allowlist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'add_to_whitelist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-whitelist')){
-			$new_wl_item = json_decode($cached_blacklist[$_GET['iphash']]);
+		if(isset($_GET['action']) && $_GET['action'] == 'add_to_allowlist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-move-item-allowlist')){
+			$new_wl_item = json_decode($cached_blocklist[$_GET['iphash']]);
 			if(is_object($new_wl_item)){
 				$new_wl_item->action = 'allow';
 				$new_wl_item->date_added = current_time('timestamp');
 				$new_wl_item->expires = strtotime('+1 hour', current_time('timestamp'));
 
-				$cached_whitelist[$_GET['iphash']] = json_encode($new_wl_item);
+				$cached_allowlist[$_GET['iphash']] = json_encode($new_wl_item);
 
-				unset($cached_blacklist[$_GET['iphash']]);
-				update_option('tinyshield_cached_whitelist', $cached_whitelist);
-				update_option('tinyshield_cached_blacklist', $cached_blacklist);
+				unset($cached_blocklist[$_GET['iphash']]);
+				update_option('tinyshield_cached_allowlist', $cached_allowlist);
+				update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
 ?>
-				<div class="updated"><p><strong><?php _e('The IP Address has added to the Whitelist.', 'tinyshield');?></strong></p></div>
+				<div class="updated"><p><strong><?php _e('The IP Address has added to the Allowlist.', 'tinyshield');?></strong></p></div>
 <?php
 			}
 		}
 
 		/*****************************************
-			Delete IP Address from Whitelist Action
+			Delete IP Address from Allowlist Action
 		******************************************/
-		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_whitelist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-whitelist-item')){
-			unset($cached_whitelist[$_GET['iphash']]);
-			update_option('tinyshield_cached_whitelist', $cached_whitelist);
+		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_allowlist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-allowlist-item')){
+			unset($cached_allowlist[$_GET['iphash']]);
+			update_option('tinyshield_cached_allowlist', $cached_allowlist);
 ?>
-			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blacklist. If this IP is trys to connect to your site again, it will be rechecked.', 'tinyshield');?></strong></p></div>
+			<div class="updated"><p><strong><?php _e('The IP Address has been removed from the Blocklist. If this IP is trys to connect to your site again, it will be rechecked.', 'tinyshield');?></strong></p></div>
 <?php
 		}
 
@@ -1174,10 +1174,10 @@ class tinyShield{
 				<h2> <?php _e('tinyShield - Simple. Focused. Security.', 'tinyshield') ?></h2>
 				<h2 class="nav-tab-wrapper">
 					<a href="?page=tinyshield.php&tab=log" class="nav-tab <?php echo $active_tab == 'log' ? 'nav-tab-active' : ''; ?>">Activity Log</a>
-					<a href="?page=tinyshield.php&tab=perm-whitelist" class="nav-tab <?php echo $active_tab == 'perm-whitelist' ? 'nav-tab-active' : ''; ?>">Permanent Whitelist (<?php echo count($cached_perm_whitelist); ?>)</a>
-					<a href="?page=tinyshield.php&tab=perm-blacklist" class="nav-tab <?php echo $active_tab == 'perm-blacklist' ? 'nav-tab-active' : ''; ?>">Permanent Blacklist (<?php echo count($cached_perm_blacklist); ?>)</a>
-					<a href="?page=tinyshield.php&tab=whitelist" class="nav-tab <?php echo $active_tab == 'whitelist' ? 'nav-tab-active' : ''; ?>">Whitelist (<?php echo count($cached_whitelist); ?>)</a>
-					<a href="?page=tinyshield.php&tab=blacklist" class="nav-tab <?php echo $active_tab == 'blacklist' ? 'nav-tab-active' : ''; ?>">Blacklist (<?php echo count($cached_blacklist); ?>)</a>
+					<a href="?page=tinyshield.php&tab=perm-allowlist" class="nav-tab <?php echo $active_tab == 'perm-allowlist' ? 'nav-tab-active' : ''; ?>">Permanent Allowlist (<?php echo count($cached_perm_allowlist); ?>)</a>
+					<a href="?page=tinyshield.php&tab=perm-blocklist" class="nav-tab <?php echo $active_tab == 'perm-blocklist' ? 'nav-tab-active' : ''; ?>">Permanent Blocklist (<?php echo count($cached_perm_blocklist); ?>)</a>
+					<a href="?page=tinyshield.php&tab=allowlist" class="nav-tab <?php echo $active_tab == 'allowlist' ? 'nav-tab-active' : ''; ?>">Allowlist (<?php echo count($cached_allowlist); ?>)</a>
+					<a href="?page=tinyshield.php&tab=blocklist" class="nav-tab <?php echo $active_tab == 'blocklist' ? 'nav-tab-active' : ''; ?>">Blocklist (<?php echo count($cached_blocklist); ?>)</a>
 					<a href="?page=tinyshield.php&tab=settings" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
 				</h2>
 
@@ -1248,7 +1248,7 @@ class tinyShield{
 
 						<?php if(!is_null($options['subscription']) && $options['subscription'] == 'community' && !empty($options['site_activation_key'])): ?>
 							<h3><?php _e('Upgrade To Professional', 'tinyshield'); ?></h3>
-									<p><?php _e('Gain access to the most comprehensive blacklist and whitelist feeds we have to offer by signing up for our Professional service. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, professional features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
+									<p><?php _e('Gain access to the most comprehensive blocklist and allowlist feeds we have to offer by signing up for our Professional service. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, professional features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
 									<p><a target="_blank" href="<?php esc_attr_e(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Upgrade This Site', 'tinyshield'); ?></a></p>
 						<?php endif; ?>
 
@@ -1345,131 +1345,131 @@ class tinyShield{
 						<hr />
 
 						<h2 class="title"><?php _e('Diagnostics', 'tinyshield'); ?></h2>
-						<h3><?php _e('Clear Cached Blacklist', 'tinyshield'); ?></h3>
+						<h3><?php _e('Clear Cached Blocklist', 'tinyshield'); ?></h3>
 
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-							<p>Use this to clear all addresses from your local cached blacklist. This is not recommended and only use in case of issues or if directed by support.</p>
-							<?php wp_nonce_field('tinyshield-clear-local-blacklist'); ?>
-							<input type="hidden" name="tinyshield_action" value="clear_cached_blacklist" />
-							<p><input class="button button-secondary" type="submit" name="clear_cached_blacklist" id="clear_cached_blacklist" value="<?php _e('Clear Cache Blacklist', 'tinyshield'); ?>" /></p>
+							<p>Use this to clear all addresses from your local cached blocklist. This is not recommended and only use in case of issues or if directed by support.</p>
+							<?php wp_nonce_field('tinyshield-clear-local-blocklist'); ?>
+							<input type="hidden" name="tinyshield_action" value="clear_cached_blocklist" />
+							<p><input class="button button-secondary" type="submit" name="clear_cached_blocklist" id="clear_cached_blocklist" value="<?php _e('Clear Cache Blocklist', 'tinyshield'); ?>" /></p>
 						</form>
 
-						<h3><?php _e('Clear Cached Whitelist', 'tinyshield'); ?></h3>
+						<h3><?php _e('Clear Cached Allowlist', 'tinyshield'); ?></h3>
 
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-							<p>Use this to clear all addresses from your local cached whitelist. This is not recommended and only use in case of issues or if directed by support.</p>
-							<?php wp_nonce_field('tinyshield-clear-local-whitelist'); ?>
-							<input type="hidden" name="tinyshield_action" value="clear_cached_whitelist" />
-							<p><input class="button button-secondary" type="submit" name="clear_cached_whitelist" id="clear_cached_whitelist" value="<?php _e('Clear Cache Whitelist', 'tinyshield'); ?>" /></p>
+							<p>Use this to clear all addresses from your local cached allowlist. This is not recommended and only use in case of issues or if directed by support.</p>
+							<?php wp_nonce_field('tinyshield-clear-local-allowlist'); ?>
+							<input type="hidden" name="tinyshield_action" value="clear_cached_allowlist" />
+							<p><input class="button button-secondary" type="submit" name="clear_cached_allowlist" id="clear_cached_allowlist" value="<?php _e('Clear Cache Allowlist', 'tinyshield'); ?>" /></p>
 						</form>
 
-						<h3><?php _e('Clear Permanent Blacklist', 'tinyshield'); ?></h3>
+						<h3><?php _e('Clear Permanent Blocklist', 'tinyshield'); ?></h3>
 
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-							<p>Use this to clear all addresses from your permanent blacklist. This is not recommended and only use in case of issues or if directed by support.</p>
-							<?php wp_nonce_field('tinyshield-clear-permanent-blacklist'); ?>
-							<input type="hidden" name="tinyshield_action" value="clear_permanent_blacklist" />
-							<p><input class="button button-secondary" type="submit" name="clear_permanent_blacklist" id="clear_permanent_blacklist" value="<?php _e('Clear Permanent Blacklist', 'tinyshield'); ?>" /></p>
+							<p>Use this to clear all addresses from your permanent blocklist. This is not recommended and only use in case of issues or if directed by support.</p>
+							<?php wp_nonce_field('tinyshield-clear-permanent-blocklist'); ?>
+							<input type="hidden" name="tinyshield_action" value="clear_permanent_blocklist" />
+							<p><input class="button button-secondary" type="submit" name="clear_permanent_blocklist" id="clear_permanent_blocklist" value="<?php _e('Clear Permanent Blocklist', 'tinyshield'); ?>" /></p>
 						</form>
 
 				<?php endif; ?>
 
 				<!--
 						**********************************
-							permanent blacklist table
+							permanent blocklist table
 						**********************************
 				-->
-				<?php if($active_tab == 'perm-blacklist'): ?>
+				<?php if($active_tab == 'perm-blocklist'): ?>
 					<form method="post" action="<?php echo esc_url(remove_query_arg(array('action', '_wpnonce', 'iphash'), $_SERVER['REQUEST_URI'])); ?>">
 						<?php
 							if(function_exists('wp_nonce_field')){
-								wp_nonce_field('update-tinyshield-perm-blacklist');
-								$delete_item_nonce = wp_create_nonce('delete-tinyshield-perm-blacklist-item');
+								wp_nonce_field('update-tinyshield-perm-blocklist');
+								$delete_item_nonce = wp_create_nonce('delete-tinyshield-perm-blocklist-item');
 							}
 						?>
-						<h3>Permanent Blacklist</h3>
-						<p>These are addresses that are permanently blocked from accessing the site regardless if they are found in a blacklist or not.</p>
+						<h3>Permanent Blocklist</h3>
+						<p>These are addresses that are permanently blocked from accessing the site regardless if they are found in a blocklist or not.</p>
 						<hr />
 						<p>
-							<textarea name="perm_ip_to_blacklist" rows="5" cols="60" placeholder="<?php _e('Enter a single or multiple IP addresses. One address per line.', 'tinyshield'); ?>"></textarea>
+							<textarea name="perm_ip_to_blocklist" rows="5" cols="60" placeholder="<?php _e('Enter a single or multiple IP addresses. One address per line.', 'tinyshield'); ?>"></textarea>
 						</p>
 						<p>
-							<input type="submit" class="button button-primary" name="tinyshield_perm_blacklist_update" value="<?php _e('Add to Blacklist', 'tinyshield') ?>" />
+							<input type="submit" class="button button-primary" name="tinyshield_perm_blocklist_update" value="<?php _e('Add to Blocklist', 'tinyshield') ?>" />
 						</p>
 
 					</form>
 					<?php
-						$tinyShield_PermBlackList_Table = new tinyShield_PermBlackList_Table();
-						$tinyShield_PermBlackList_Table->prepare_items();
+						$tinyShield_PermBlockList_Table = new tinyShield_PermBlockList_Table();
+						$tinyShield_PermBlockList_Table->prepare_items();
 					?>
-					<form id="perm-blacklist-table" method="get">
+					<form id="perm-blocklist-table" method="get">
 						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
-						<?php $tinyShield_PermBlackList_Table->display(); ?>
+						<?php $tinyShield_PermBlockList_Table->display(); ?>
 					</form>
 				<?php endif; ?>
 
 				<!--
 						**********************************
-							permanent whitelist table
+							permanent allowlist table
 						**********************************
 				-->
 
-				<?php if($active_tab == 'perm-whitelist'): ?>
+				<?php if($active_tab == 'perm-allowlist'): ?>
 					<form method="post" action="<?php echo esc_url(remove_query_arg(array('action', '_wpnonce', 'iphash'), $_SERVER['REQUEST_URI'])); ?>">
 						<?php
 							if(function_exists('wp_nonce_field')){
-								wp_nonce_field('update-tinyshield-perm-whitelist');
-								$delete_item_nonce = wp_create_nonce('delete-tinyshield-perm-whitelist-item');
+								wp_nonce_field('update-tinyshield-perm-allowlist');
+								$delete_item_nonce = wp_create_nonce('delete-tinyshield-perm-allowlist-item');
 							}
 						?>
-						<h3>Permanent Whitelist</h3>
-						<p>These are addresses that are permanently allowed to access the site even if they are found in a black list. This is useful for false positives. The permanent whitelist is checked before any other check is performed.</p>
+						<h3>Permanent Allowlist</h3>
+						<p>These are addresses that are permanently allowed to access the site even if they are found in a blocklist. This is useful for false positives. The permanent allowlist is checked before any other check is performed.</p>
 						<hr />
 						<p>
-							<textarea name="perm_ip_to_whitelist" rows="5" cols="60" placeholder="<?php _e('Enter a single or multiple IP addresses. One address per line.', 'tinyshield'); ?>"></textarea>
+							<textarea name="perm_ip_to_allowlist" rows="5" cols="60" placeholder="<?php _e('Enter a single or multiple IP addresses. One address per line.', 'tinyshield'); ?>"></textarea>
 						</p>
 						<p>
-							<input type="submit" class="button button-primary" name="tinyshield_perm_whitelist_update" value="<?php _e('Add to Whitelist', 'tinyshield') ?>" />
+							<input type="submit" class="button button-primary" name="tinyshield_perm_allowlist_update" value="<?php _e('Add to Allowlist', 'tinyshield') ?>" />
 						</p>
 					</form>
 					<?php
-						$tinyShield_PermWhiteList_Table = new tinyShield_PermWhiteList_Table();
-						$tinyShield_PermWhiteList_Table->prepare_items();
+						$tinyShield_PermAllowlist_Table = new tinyShield_PermAllowlist_Table();
+						$tinyShield_PermAllowlist_Table->prepare_items();
 					?>
-					<form id="perm-whitelist-table" method="get">
+					<form id="perm-allowlist-table" method="get">
 						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
-						<?php $tinyShield_PermWhiteList_Table->display(); ?>
+						<?php $tinyShield_PermAllowlist_Table->display(); ?>
 					</form>
 			  <?php endif; ?>
-				<?php if($active_tab == 'whitelist'): ?>
-					<h3>Whitelist</h3>
+				<?php if($active_tab == 'allowlist'): ?>
+					<h3>Allowlist</h3>
 					<p>These are addresses that have been checked and are not known to be malicious at this time. Addresses will remain cached for 1 hour and then will be checked again.</p>
 					<hr />
 					<?php
-						$tinyShield_WhiteList_Table = new tinyShield_WhiteList_Table();
-						$tinyShield_WhiteList_Table->prepare_items();
+						$tinyShield_Allowlist_Table = new tinyShield_Allowlist_Table();
+						$tinyShield_Allowlist_Table->prepare_items();
 					?>
-					<form id="whitelist-table" method="get">
+					<form id="allowlist-table" method="get">
 						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
-						<?php $tinyShield_WhiteList_Table->display(); ?>
+						<?php $tinyShield_Allowlist_Table->display(); ?>
 					</form>
 			  <?php endif; ?>
 				<!--
 						**********************************
-							blacklist table
+							blocklist table
 						**********************************
 				-->
-				<?php if($active_tab == 'blacklist'): ?>
-					<h3>Blacklist</h3>
+				<?php if($active_tab == 'blocklist'): ?>
+					<h3>Blocklist</h3>
 					<p>These are addresses that have tried to visit your site and been found to be malicious. Requests from these addresses are blocked and will remain cached for 24 hours and then will be checked again.</p>
 					<hr />
 					<?php
-						$tinyShield_BlackList_Table = new tinyShield_BlackList_Table();
-						$tinyShield_BlackList_Table->prepare_items();
+						$tinyShield_BlockList_Table = new tinyShield_BlockList_Table();
+						$tinyShield_BlockList_Table->prepare_items();
 					?>
-					<form id="blacklist-table" method="get">
+					<form id="blocklist-table" method="get">
 						<input type="hidden" name="page" value="<?php echo absint($_REQUEST['page']); ?>" />
-						<?php $tinyShield_BlackList_Table->display(); ?>
+						<?php $tinyShield_BlockList_Table->display(); ?>
 					</form>
 				<?php endif; ?>
 
