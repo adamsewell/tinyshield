@@ -28,6 +28,7 @@ include_once(plugin_dir_path(__FILE__) . 'lib/tables/allowlist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/activity_log_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_allowlist_tables.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blocklist_tables.php');
+include_once(plugin_dir_path(__FILE__) . 'lib/upgrade/functions.php');
 include_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
 
 class tinyShield{
@@ -150,7 +151,6 @@ class tinyShield{
 	public static function update_options(){
 		if(current_user_can('manage_options')){
 			$options = get_option('tinyshield_options');
-			$cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
 
 			$default_options = array(
 				'subscription' => 'community',
@@ -167,68 +167,25 @@ class tinyShield{
 				'tinyshield_disabled' => false,
 				'block_tor_exit_nodes' => false,
 				'review_date' => strtotime('+30 days'),
-				'db_version' => '040'
+				'db_version' => '055'
 			);
 
-			//upgrade 0.3.x to 0.4.x+
+			//upgrade routines
 			if(!isset($options['db_version'])){
-				$cached_blocklist = get_option('tinyshield_cached_blocklist');
-				$cached_allowlist = get_option('tinyshield_cached_allowlist');
-				$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
-
-
-				//update cached allow and block lists
-				update_option('tinyshield_cached_blocklist', array());
-				update_option('tinyshield_cached_allowlist', array());
-
-				//upgrade permanent lists
-				if(is_array($cached_perm_blocklist) && !empty($cached_perm_blocklist)){
-					$updated_array = array();
-
-					foreach($cached_perm_blocklist as $key => $entry){
-						if(is_int($key)){
-							$ip = long2ip($key);
-							$meta = json_decode($entry);
-
-							if(is_object($meta)){
-								$meta->ip_address = $ip;
-								$updated_array[sha1($ip)] = json_encode($meta);
-							}
-						}
-					}
-
-					update_option('tinyshield_cached_perm_blocklist', $updated_array);
-				}
-
-				if(is_array($cached_perm_allowlist) && !empty($cached_perm_allowlist)){
-					$updated_array = array();
-
-					foreach($cached_perm_allowlist as $key => $entry){
-						if(is_int($key)){
-							$ip = long2ip($key);
-							$meta = json_decode($entry);
-
-							if(is_object($meta)){
-								$meta->ip_address = $ip;
-								$updated_array[sha1($ip)] = json_encode($meta);
-							}
-						}
-					}
-
-					update_option('tinyshield_cached_perm_allowlist', $updated_array);
-				}
+				tinyShieldUpgradeFunctions::upgrade_03_to_04();
+				$options['db_version'] = '040';
 			}
 
-			if(empty($options)){
+			if(isset($options['db_version']) && $options['db_version'] == '040'){
+				tinyShieldUpgradeFunctions::upgrade_040_to_055();
+				$options['db_version'] = '055';
+			}
+
+			if(empty($options)){ //incase we need to set the default options
 				update_option('tinyshield_options', $default_options);
-			}else{
+			}else{ //incase we need to update options
 				$merged_options = array_replace($default_options, $options);
 				update_option('tinyshield_options', $merged_options);
-			}
-
-			if(!is_array($cached_perm_blocklist)){
-				$cached_perm_blocklist = array();
-				update_option('tinyshield_cached_perm_blocklist', $cached_perm_blocklist);
 			}
 		}
 	}
@@ -243,13 +200,14 @@ class tinyShield{
 			wp_die('tinyShield is not compatible with WordPress multisite... yet.');
 		}
 
+		self::update_options();
+
 		$cached_blocklist = get_option('tinyshield_cached_blocklist');
 		$cached_allowlist = get_option('tinyshield_cached_allowlist');
 		$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
 		$cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
 
-		self::update_options();
-
+		//set up our default block and allow lists
 		if(!is_array($cached_blocklist)){
 			$cached_blocklist = array();
 			update_option('tinyshield_cached_blocklist', $cached_blocklist);
@@ -488,23 +446,26 @@ class tinyShield{
 		$cached_blocklist = get_option('tinyshield_cached_blocklist');
 		$cached_allowlist = get_option('tinyshield_cached_allowlist');
 
-		foreach($cached_blocklist as $iphash => $iphash_data){
-			$iphash_data = json_decode($iphash_data);
-			if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
-				unset($cached_blocklist[$iphash]);
+		if(is_array($cached_blocklist) && !empty($cached_blocklist)){
+			foreach($cached_blocklist as $iphash => $iphash_data){
+				$iphash_data = json_decode($iphash_data);
+				if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
+					unset($cached_blocklist[$iphash]);
+				}
 			}
 
+			update_option('tinyshield_cached_blocklist', $cached_blocklist);
 		}
 
-		foreach($cached_allowlist as $iphash => $iphash_data){
-			$iphash_data = json_decode($iphash_data);
-			if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
-				unset($cached_allowlist[$iphash]);
+		if(is_array($cached_allowlist) && !empty($cached_allowlist)){
+			foreach($cached_allowlist as $iphash => $iphash_data){
+				$iphash_data = json_decode($iphash_data);
+				if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
+					unset($cached_allowlist[$iphash]);
+				}
 			}
+			update_option('tinyshield_cached_allowlist', $cached_allowlist);
 		}
-
-		update_option('tinyshield_cached_allowlist', $cached_allowlist);
-		update_option('tinyshield_cached_blocklist', $cached_blocklist);
 	}
 
 	private static function get_valid_ip(){
