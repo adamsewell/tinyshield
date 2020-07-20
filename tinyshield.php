@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.5.5
+Version: 0.6.0
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -129,9 +129,9 @@ class tinyShield{
 
 	public static function register_admin_resources($page){
 		if($page == 'toplevel_page_tinyshield'){
-			wp_enqueue_script('tinyshield-chosen', plugin_dir_url(__FILE__) . 'lib/js/chosen.jquery.min.js', array('jquery'), '1.8.7', true);
-			wp_enqueue_script('tinyshield-chosen-custom', plugin_dir_url(__FILE__) . 'lib/js/tinyshield.custom.js', array('jquery', 'tinyshield-chosen'), '1.0.0', true);
-			wp_enqueue_style('tinyshield-chosen-css', plugin_dir_url(__FILE__) . 'lib/css/chosen.css');
+			wp_enqueue_script('select2', plugin_dir_url(__FILE__) . 'lib/js/select2.min.js', array('jquery'), '4.0.13', true);
+			wp_enqueue_script('tinyshield-select2-custom', plugin_dir_url(__FILE__) . 'lib/js/tinyshield.custom.js', array('jquery', 'select2'), '1.0.0', true);
+			wp_enqueue_style('tinyshield-select2-css', plugin_dir_url(__FILE__) . 'lib/css/select2.min.css');
 			wp_enqueue_style('tinyshield-css', plugin_dir_url(__FILE__) . 'lib/css/tinyshield.css');
 		}
 	}
@@ -1254,7 +1254,7 @@ class tinyShield{
 										$countries = tinyShieldFunctions::get_country_codes();
 									?>
 
-									<select data-placeholder="Which Countries Would You Like To Block?" class="chosen-select" multiple name="options[countries_to_block][]">
+									<select class="country-select-block" multiple="multiple" name="options[countries_to_block][]" style="width: 50%">
 										<option value=""></option>
 										<?php foreach($countries as $code => $name): ?>
 											<?php if(is_array($blocked_selected_countries) && in_array($code, $blocked_selected_countries)): ?>
@@ -1276,7 +1276,7 @@ class tinyShield{
 										$countries = tinyShieldFunctions::get_country_codes();
 									?>
 
-									<select data-placeholder="Which Countries Would You Like To Allow?" class="chosen-select" multiple name="options[countries_to_allow][]">
+									<select class="country-select-allow" multiple="multiple" name="options[countries_to_allow][]" style="width: 50%">
 										<option value=""></option>
 										<?php foreach($countries as $code => $name): ?>
 											<?php if(is_array($allowed_selected_countries) && in_array($code, $allowed_selected_countries)): ?>
