@@ -36,8 +36,8 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 
 		$actions = array(
 			'report_false_positive' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s"> Report</a>', $_REQUEST['page'], 'report_false_positive', $report_false_postiive_nonce, $item['iphash']),
-      'add_to_allowlist' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Allowlist</a>', $_REQUEST['page'], 'add_to_allowlist', $move_item_to_allowlist_nonce, $item['iphash']),
-      'delete' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">blocklist</a>', $_REQUEST['page'], 'add_to_blocklist', $move_item_to_blocklist_nonce, $item['iphash']),
+      'add_to_allowlist' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Allow</a>', $_REQUEST['page'], 'add_to_allowlist', $move_item_to_allowlist_nonce, $item['iphash']),
+      'delete' => sprintf('<a href="?page=%s&tab=log&action=%s&_wpnonce=%s&iphash=%s">Block</a>', $_REQUEST['page'], 'add_to_blocklist', $move_item_to_blocklist_nonce, $item['iphash']),
 		);
 
     //Return the title contents
