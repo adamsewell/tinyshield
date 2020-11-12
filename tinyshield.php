@@ -1193,7 +1193,7 @@ class tinyShield{
 									<p><input class="button button-primary" type="submit" name="activate-site" id="activate-site" value="<?php _e('Activate This Site', 'tinyshield'); ?>" /></p>
 
 								<?php elseif(!is_null($options['subscription']) && $options['subscription'] != 'community'  && !empty($options['site_activation_key'])): ?>
-									<p><input type="text" size="56" value="<?php _e('Your Site is Currently Activated with tinyShield Professional'); ?>" disabled /> 🎉 </p>
+									<p><input type="text" size="56" value="<?php _e($options['site_activation_key']); ?>" disabled /> 🎉 </p>
 									<?php wp_nonce_field('tinyshield-deactivate-site'); ?>
 									<input type="hidden" name="tinyshield_action" value="deactivate-site" />
 									<p><input class="button button-secondary" type="submit" name="deactivate-site" id="deactivate-site" value="<?php _e('Deactivate This Site', 'tinyshield'); ?>" /></p>
