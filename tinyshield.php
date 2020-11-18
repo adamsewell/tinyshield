@@ -66,6 +66,9 @@ class tinyShield{
 		//hooks into the user registration process and checks our blocklist
 		add_filter('registration_errors', 'tinyShield::log_user_registration', 10, 3);
 
+		//adds hook for spam comments - when someone marks a comment as spam it submits it tinyShield
+		add_action('spam_comment', 'tinyShield::submit_spam_comment');
+
 		//adds honeypot to registration form
 		add_action('register_post', 'tinyShield::registration_form_check');
 		add_action('login_form_register', 'tinyShield::registration_form_check');
@@ -157,6 +160,7 @@ class tinyShield{
 				'countries_to_block' => '',
 				'countries_to_allow' => '',
 				'report_failed_logins' => true,
+				'report_spam_comments' => true,
 				'report_user_registration' => true,
 				'report_user_enumeration' => true,
 				'registration_form_honeypot' => true,
@@ -614,6 +618,24 @@ class tinyShield{
 		);
 	}
 
+	public static function submit_spam_comment($comment_id){
+		$options = get_option('tinyshield_options');
+
+		if($options['report_spam_comments']){
+			$comment = get_comment($comment_id);
+
+			$response = wp_remote_post(
+				self::$tinyshield_report_url,
+				array('body' => array(
+					'ip_to_report' => $comment->comment_author_IP,
+					'type' => 'spam_comment',
+					'reporting_site' => site_url(),
+					'time_of_occurance' => current_time('timestamp')
+				))
+			);
+		}
+	}
+	
 	public static function log_failed_login($username){
 		$options = get_option('tinyshield_options');
 
@@ -1224,6 +1246,10 @@ class tinyShield{
 							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
+
+							<h3><?php _e('Report Spam Comments', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable reporting spam comments. If enabled, this will report IPs of comments that you consider to be spam. Only occurs when you click the "spam" link under the commentions section. <strong>Enabled by default.</strong></p>
+							<p><input type="checkbox" name="options[report_spam_comments]" id="options[report_spam_comments]" <?php echo ($options['report_spam_comments']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_spam_comments]"><?php _e('Report Spam Comments?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Registration', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting of user registration issues to tinyShield. We only send the IP address over to our servers for verification. Often times bots will try to register accounts to post spam or malicious links in posts. <strong>Enabled by default.</strong></p>
