@@ -635,7 +635,7 @@ class tinyShield{
 			);
 		}
 	}
-	
+
 	public static function log_failed_login($username){
 		$options = get_option('tinyshield_options');
 
@@ -1248,7 +1248,7 @@ class tinyShield{
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report Spam Comments', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable reporting spam comments. If enabled, this will report IPs of comments that you consider to be spam. Only occurs when you click the "spam" link under the commentions section. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable reporting spam comments. If enabled, this will report IPs of comments that you consider to be spam. Only occurs when you click the "spam" link under the comments section. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_spam_comments]" id="options[report_spam_comments]" <?php echo ($options['report_spam_comments']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_spam_comments]"><?php _e('Report Spam Comments?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Registration', 'tinyshield'); ?></h3>
