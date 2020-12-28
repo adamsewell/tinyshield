@@ -36,7 +36,7 @@ class tinyShield_Allowlist_Table extends WP_List_Table{
 
 		$actions = array(
 			'add_to_perm_allowlist' => sprintf('<a href="?page=%s&tab=allowlist&action=%s&_wpnonce=%s&iphash=%s">Permanent Allowlist</a>',$_REQUEST['page'], 'add_to_perm_allowlist', $move_item_to_perm_allowlist_nonce, $item['iphash']),
-      'add_to_blocklist' => sprintf('<a href="?page=%s&tab=allowlist&action=%s&_wpnonce=%s&iphash=%s">blocklist</a>',$_REQUEST['page'], 'add_to_blocklist', $move_item_to_blocklist_nonce, $item['iphash']),
+      'add_to_blocklist' => sprintf('<a href="?page=%s&tab=allowlist&action=%s&_wpnonce=%s&iphash=%s">Add to Blocklist</a>',$_REQUEST['page'], 'add_to_blocklist', $move_item_to_blocklist_nonce, $item['iphash']),
       'delete' => sprintf('<a href="?page=%s&tab=allowlist&action=%s&_wpnonce=%s&iphash=%s">Remove from Allowlist</a>', $_REQUEST['page'], 'remove_from_allowlist', $allowlist_item_remove_nonce, $item['iphash'])
 		);
 
