@@ -42,7 +42,7 @@ class tinyShield{
 		register_activation_hook(__FILE__, 'tinyShield::on_activation');
 
 		add_action('admin_menu', 'tinyShield::add_menu');
-		add_action('admin_notices', 'tinyShield::notices');
+		add_action('admin_notices', 'tinyShield::notices', 99);
 		add_action('admin_init', 'tinyShield::update_options');
 		add_action('admin_enqueue_scripts', 'tinyShield::register_admin_resources');
 
