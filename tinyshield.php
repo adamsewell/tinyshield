@@ -517,7 +517,6 @@ class tinyShield{
 			)
 		);
 
-
 		if(is_wp_error($return) || wp_remote_retrieve_response_code($return) != 200){
 			return false;
 		}
@@ -854,7 +853,7 @@ class tinyShield{
 					'email' => sanitize_text_field($_POST['activate']['email']),
 					'optin' => sanitize_text_field($_POST['activate']['optin']),
 					'association_key' => sanitize_text_field($_POST['activate']['association_key']),
-					'site' => esc_attr($_POST['activate']['site'])
+					'site' => esc_url_raw($_POST['activate']['site'])
 				);
 
 				$maybe_activate = self::activate_site($registration_data);
