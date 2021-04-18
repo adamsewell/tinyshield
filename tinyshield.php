@@ -1219,7 +1219,7 @@ class tinyShield{
 									<input type="hidden" name="tinyshield_action" value="deactivate-site" />
 									<p><input class="button button-secondary" type="submit" name="deactivate-site" id="deactivate-site" value="<?php _e('Deactivate This Site', 'tinyshield'); ?>" /></p>
 								<?php else: ?>
-									<p><input type="text" size="56" value="<?php _e('Your Site is Currently Activated with tinyShield'); ?>" disabled /> 😎 </p>
+									<p><input type="text" size="56" value="<?php _e($options['site_activation_key']); ?>" disabled /> 😎 </p>
 									<?php wp_nonce_field('tinyshield-deactivate-site'); ?>
 									<input type="hidden" name="tinyshield_action" value="deactivate-site" />
 									<p><input class="button button-secondary" type="submit" name="deactivate-site" id="deactivate-site" value="<?php _e('Deactivate This Site', 'tinyshield'); ?>" /></p>
