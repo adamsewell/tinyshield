@@ -810,7 +810,8 @@ class tinyShield{
 			'key_banned' => __('This key has been banned.', 'tinyshield'),
 			'something_went_wrong' => __('Something went wrong but we\'re not sure what...', 'tinyshield'),
 			'missing_registration_data' => __('You must provide your first name, last name, and email address to register your site.', 'tinyshield'),
-			'ip_could_not_be_found' => __('The IP could not be found.', 'tinyshield')
+			'ip_could_not_be_found' => __('The IP could not be found.', 'tinyshield'),
+			'development_site' => __('tinyShield should not be activated on a development site. It does not function properly. Activate once live or on a low traffic site.', 'tinyshield')
 		);
 
 		/*****************************************
