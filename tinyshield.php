@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.6.1
+Version: 0.6.2
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -81,6 +81,10 @@ class tinyShield{
 ?>
 		<?php if(current_user_can('manage_options') && empty($options['site_activation_key'])): ?>
 			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
+		<?php endif; ?>
+
+		<?php if(current_user_can('manage_options') && !empty($options['license_error'])): ?>
+			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield has reported an issue with the license key. Requests are not being analyzed. Check your activation here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a>. Try deactivating and reactivating first, contact support if needed.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && $options['tinyshield_disabled']): ?>
@@ -171,6 +175,7 @@ class tinyShield{
 				'tinyshield_disabled' => false,
 				'block_tor_exit_nodes' => false,
 				'review_date' => strtotime('+30 days'),
+				'license_error' => false,
 				'db_version' => '055'
 			);
 
@@ -387,7 +392,7 @@ class tinyShield{
 		$response_code = wp_remote_retrieve_response_code($response);
 		$response_body = wp_remote_retrieve_body($response);
 
-		if(!is_wp_error($response)){
+		if(!is_wp_error($response) && $response_code == 200){
 			self::write_log('tinyShield: remote blocklist lookup response');
 			self::write_log('tinyShield: ' . $response_body);
 
@@ -437,13 +442,17 @@ class tinyShield{
 						return false;
 					}
 				}
-
-				return false; //default to allow in case of emergency
 			}
 		}else{
 			self::write_log('tinyShield: check_ip error');
-			self::write_log($response->get_error_message());
+			self::write_log($response_code . ': ' . $response->get_error_message());
+
+			if($response_code == 403){
+				$options['license_error'] = true;
+			}
 		}
+
+		return false; //default to allow in case of emergency
 	}
 
 	private static function clean_up_lists(){
@@ -804,7 +813,7 @@ class tinyShield{
 		);
 
 		$error_messages = array(
-			'key_not_found' => __('Sorry, this key was not found. Please try again.', 'tinyshield'),
+			'key_not_found' => __('Sorry, this key was not found. Please deactivate and try again or contact support.', 'tinyshield'),
 			'key_in_use' => __('Sorry, this site has already been activated. Please contact support.', 'tinyshield'),
 			'key_expired' => __('This key is expired. Please renew your key.', 'tinyshield'),
 			'key_banned' => __('This key has been banned.', 'tinyshield'),
@@ -885,6 +894,7 @@ class tinyShield{
 
 			if(is_bool($maybe_deactivate) && $maybe_deactivate){
 				$options['site_activation_key'] = '';
+				$options['license_error'] = false;
 				update_option('tinyshield_options', $options);
 				$alerts = $success_messages['site_key_deactivated'];
 
