@@ -37,6 +37,7 @@ class tinyShield{
 	private static $tinyshield_check_url = 'https://endpoint.tinyshield.me/checkv3';
 	private static $tinyshield_upgrade_url = 'https://tinyshield.me/upgrade-my-site/';
 	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activatev2';
+	private static $tinyshield_account_url = 'https://tinyshield.me/my-account/';
 
 	public function __construct(){
 		register_activation_hook(__FILE__, 'tinyShield::on_activation');
@@ -80,15 +81,15 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 ?>
 		<?php if(current_user_can('manage_options') && empty($options['site_activation_key'])): ?>
-			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
+			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && !empty($options['license_error'])): ?>
-			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield has reported an issue with the license key. Requests are not being analyzed. Check your activation here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a>. Try deactivating and reactivating first, contact support if needed.', 'tinyshield');?></strong></p></div>
+			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield has reported an issue with the license key. Requests are not being analyzed. Check your activation here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a>. Try deactivating and reactivating first, contact support if needed.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && $options['tinyshield_disabled']): ?>
-			<div class="notice notice-warning"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . admin_url('admin.php?page=tinyshield.php&tab=settings') . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
+			<div class="notice notice-warning"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && !is_null($options['subscription']) && $options['subscription'] == 'community' && $options['review_date'] >= current_time('timestamp') && empty(get_user_meta(get_current_user_id(), 'tinyshield_review_notice'))): ?>
@@ -120,10 +121,10 @@ class tinyShield{
 
 			<?php
 				$active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'log';
-				$nag_admin_dismiss_url = "admin.php?page=tinyshield.php&tab=" . $active_tab . "&dismiss_tinyshield_nag=1";
+				$nag_admin_dismiss_url = admin_url("admin.php?page=tinyshield.php&tab=" . $active_tab . "&dismiss_tinyshield_nag=1");
 				$plugin_review_url = "https://wordpress.org/support/plugin/tinyshield/reviews/#new-post";
 			?>
-			<div class="notice notice-success"><p class="review"><span class="dashicons dashicons-heart"></span><strong><?php _e('tinyShield: Are you seeing benefit out of tinyShield? Consider <a target="_blank" href="'. esc_attr(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)) .'">upgrading to our professional plan</a> for lots of additional features or consider leaving us a <a target="_blank" href="' . esc_attr($plugin_review_url) . '">plugin review</a>!'); ?> <a href="<?php echo esc_url(admin_url($nag_admin_dismiss_url)); ?>" class="dismiss"><span class="dashicons dashicons-dismiss"></span></a></strong></p></div>
+			<div class="notice notice-success"><p class="review"><span class="dashicons dashicons-heart"></span><strong><?php _e('tinyShield: Are you seeing benefit out of tinyShield? Consider <a target="_blank" href="'. esc_attr(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)) .'">upgrading to our professional plan</a> for lots of additional features or consider leaving us a <a target="_blank" href="' . esc_attr($plugin_review_url) . '">plugin review</a>!'); ?> <a href="<?php echo esc_url($nag_admin_dismiss_url); ?>" class="dismiss"><span class="dashicons dashicons-dismiss"></span></a></strong></p></div>
 		<?php endif; ?>
 <?php
 	}
@@ -1166,12 +1167,12 @@ class tinyShield{
 				<?php $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'log'; ?>
 				<h2> <?php _e('tinyShield - Simple. Focused. Security.', 'tinyshield') ?></h2>
 				<h2 class="nav-tab-wrapper">
-					<a href="?page=tinyshield.php&tab=log" class="nav-tab <?php echo $active_tab == 'log' ? 'nav-tab-active' : ''; ?>">Activity Log</a>
-					<a href="?page=tinyshield.php&tab=perm-allowlist" class="nav-tab <?php echo $active_tab == 'perm-allowlist' ? 'nav-tab-active' : ''; ?>">Permanent Allowlist (<?php echo count($cached_perm_allowlist); ?>)</a>
-					<a href="?page=tinyshield.php&tab=perm-blocklist" class="nav-tab <?php echo $active_tab == 'perm-blocklist' ? 'nav-tab-active' : ''; ?>">Permanent Blocklist (<?php echo count($cached_perm_blocklist); ?>)</a>
-					<a href="?page=tinyshield.php&tab=allowlist" class="nav-tab <?php echo $active_tab == 'allowlist' ? 'nav-tab-active' : ''; ?>">Allowlist (<?php echo count($cached_allowlist); ?>)</a>
-					<a href="?page=tinyshield.php&tab=blocklist" class="nav-tab <?php echo $active_tab == 'blocklist' ? 'nav-tab-active' : ''; ?>">Blocklist (<?php echo count($cached_blocklist); ?>)</a>
-					<a href="?page=tinyshield.php&tab=settings" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=log')); ?>" class="nav-tab <?php echo $active_tab == 'log' ? 'nav-tab-active' : ''; ?>">Activity Log</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=perm-allowlist')); ?>" class="nav-tab <?php echo $active_tab == 'perm-allowlist' ? 'nav-tab-active' : ''; ?>">Permanent Allowlist (<?php echo count($cached_perm_allowlist); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=perm-blocklist')); ?>" class="nav-tab <?php echo $active_tab == 'perm-blocklist' ? 'nav-tab-active' : ''; ?>">Permanent Blocklist (<?php echo count($cached_perm_blocklist); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=allowlist')); ?>" class="nav-tab <?php echo $active_tab == 'allowlist' ? 'nav-tab-active' : ''; ?>">Allowlist (<?php echo count($cached_allowlist); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=blocklist')); ?>" class="nav-tab <?php echo $active_tab == 'blocklist' ? 'nav-tab-active' : ''; ?>">Blocklist (<?php echo count($cached_blocklist); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')); ?>" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
 				</h2>
 
 				<!--
@@ -1182,8 +1183,8 @@ class tinyShield{
 
 				<?php if($active_tab == 'log'): ?>
 					<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-						<h3>Activity Log</h3>
-						<p>View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review.</p>
+						<h3><?php _e('Activity Log', 'tinyshield'); ?></h3>
+						<p><?php _e('View the latest traffic to your site and how it was dealt with by tinyShield. Reporting a false positive will submit the offending IP to tinyShield for further review.', 'tinyshield'); ?></p>
 						<hr />
 					</form>
 					<?php
@@ -1208,7 +1209,7 @@ class tinyShield{
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
 							<p>
 								<?php if(empty($options['site_activation_key'])): ?>
-									<p>Before we can help protect your site, you must register and activate your site with tinyShield.</p>
+									<p><?php _e('Before we can help protect your site, you must register and activate your site with tinyShield. If you have already purchased a license, you can find it on the <a target="_blank" href="' . esc_url(self::$tinyshield_account_url) . '">tinyShield account</a> page then copy the key and paste in the license key field below.', 'tinyshield'); ?></p>
 									<?php wp_nonce_field('tinyshield-activate-site'); ?>
 									<input type="hidden" name="tinyshield_action" value="activate-site" />
 
@@ -1217,7 +1218,7 @@ class tinyShield{
 										<input size="28" type="text" placeholder="<?php _e('Contact Last Name', 'tinyshield'); ?>" name="activate[lname]" value="" />
 									</p>
 									<p><input size="56" type="text" placeholder="<?php _e('Contact Email Address', 'tinyshield'); ?>" name="activate[email]" value="" /></p>
-									<p><input size="56" type="text" placeholder="<?php _e('Site Association Key (For Agencies or Multiple Sites)', 'tinyshield'); ?>" name="activate[association_key]" value="" /></p>
+									<p><input size="56" type="text" placeholder="<?php _e('License Key (For Agencies or Multiple Sites)', 'tinyshield'); ?>" name="activate[association_key]" value="" /></p>
 									<p><input type="checkbox" name="activate[optin]" id="activate[optin]" checked /> <label for="activate[optin]"><?php _e('Can we contact you for marketing purposes?', 'tinyshield'); ?></label></p>
 
 
@@ -1241,7 +1242,7 @@ class tinyShield{
 
 						<?php if(!is_null($options['subscription']) && $options['subscription'] == 'community' && !empty($options['site_activation_key'])): ?>
 							<h3><?php _e('Upgrade To Professional', 'tinyshield'); ?></h3>
-									<p><?php _e('Gain access to the most comprehensive blocklist and allowlist feeds we have to offer by signing up for our Professional service. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, professional features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
+									<p><?php _e('Gain access to the most comprehensive blocklist and allowlist feeds we have to offer by signing up for Premium Access. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, premium features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
 									<p><a target="_blank" href="<?php esc_attr_e(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Upgrade This Site', 'tinyshield'); ?></a></p>
 						<?php endif; ?>
 
@@ -1278,11 +1279,11 @@ class tinyShield{
 							<p><input type="checkbox" name="options[report_404]" id="options[report_404]" <?php echo ($options['report_404']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_404]"><?php _e('Report 404s?', 'tinyshield'); ?></label></p>
 
 							<?php if($options['subscription'] != 'community'): ?>
-								<h3><?php _e('Block Tor Exit Nodes - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
-								<p>Toggle this to enable or disable the blocking of <a href="https://www.torproject.org/" target="_blank">Tor</a> exit nodes. Tor can be used for malicious and legitimate purposes. If you have any reason anonymous users would access your site, leave this disabled. <strong>Disabled by default.</strong></p>
+								<h3><?php _e('Block Tor Exit Nodes - <i>Premium Feature</i>', 'tinyshield'); ?></h3>
+								<p>Toggle this to enable or disable the blocking of <a href="<?php echo esc_url('https://www.torproject.org/'); ?>'" target="_blank">Tor</a> exit nodes. Tor can be used for malicious and legitimate purposes. If you have any reason anonymous users would access your site, leave this disabled. <strong>Disabled by default.</strong></p>
 								<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
 
-								<h3><?php _e('Inclusive Block Countries (GeoIP Filtering) - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
+								<h3><?php _e('Inclusive Block Countries (GeoIP Filtering) - <i>Premium Feature</i>', 'tinyshield'); ?></h3>
 								<p>Select a country or multiple countries to block from accessing your site. <strong>No countries are selected by default.</strong></p>
 								<p>
 									<?php
@@ -1304,7 +1305,7 @@ class tinyShield{
 							<?php endif; ?>
 
 							<?php if($options['subscription'] != 'community'): ?>
-								<h3><?php _e('Exclusive Block Countries (GeoIP Filtering) - <i>Professional Feature</i>', 'tinyshield'); ?></h3>
+								<h3><?php _e('Exclusive Block Countries (GeoIP Filtering) - <i>Premium Feature</i>', 'tinyshield'); ?></h3>
 								<p>Select a country or multiple countries to allow access to your site assuming all countries are blocked by default. <strong>Feature disabled until a country is selected.</strong></p>
 								<p>
 									<?php
