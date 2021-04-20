@@ -230,11 +230,13 @@ class tinyShield{
 
 		if(!is_array($cached_perm_allowlist)){
 			$cached_perm_allowlist = array();
+			$ip = self::get_valid_ip();
 
 			$perm_allowlist_entry = new stdClass();
 			$perm_allowlist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+			$perm_allowlist_entry->ip_address = $ip;
 
-			$cached_perm_allowlist[sha1(self::get_valid_ip())] = json_encode($perm_allowlist_entry);
+			$cached_perm_allowlist[sha1($ip)] = json_encode($perm_allowlist_entry);
 			update_option('tinyshield_cached_perm_allowlist', $cached_perm_allowlist);
 		}
 
@@ -986,6 +988,7 @@ class tinyShield{
 						$perm_allowlist_entry = new stdClass();
 						$perm_allowlist_entry->expires = strtotime('+30 years', current_time('timestamp'));
 						$perm_allowlist_entry->ip_address = $ip;
+						
 						$cached_perm_allowlist[sha1($ip)] = json_encode($perm_allowlist_entry);
 					}else{
 						$invalid_ip = true;
