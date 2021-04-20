@@ -81,15 +81,95 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 ?>
 		<?php if(current_user_can('manage_options') && empty($options['site_activation_key'])): ?>
-			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Site Activation.', 'tinyshield');?></strong></p></div>
+			<style>
+					p.error {
+							position: relative;
+							margin-left: 35px;
+							padding: 1px;
+					}
+
+					p.error span.dashicons-bell {
+							color: white;
+							background: #d63638;
+							position: absolute;
+							left: -50px;
+							padding: 9px;
+							top: -8px;
+					}
+
+					p.error strong {
+							color: #d63638;
+					}
+
+					p.error a.dismiss {
+							float: right;
+							text-decoration: none;
+							color: #d63638;
+					}
+			</style>
+
+			<div class="notice notice-error"><p class="error"><span class="dashicons dashicons-bell"></span><strong><?php _e('tinyShield: tinyShield is not currently activated. Before we can help protect your site, you must register your site. You can do that here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Site Activation.', 'tinyshield'); ?> </strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && !empty($options['license_error'])): ?>
-			<div class="notice notice-error"><p><strong><?php _e('tinyShield: tinyShield has reported an issue with the license key. Requests are not being analyzed. Check your activation here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a>. Try deactivating and reactivating first, contact support if needed.', 'tinyshield');?></strong></p></div>
+			<style>
+					p.error {
+							position: relative;
+							margin-left: 35px;
+							padding: 1px;
+					}
+
+					p.error span.dashicons-bell {
+							color: white;
+							background: #d63638;
+							position: absolute;
+							left: -50px;
+							padding: 9px;
+							top: -8px;
+					}
+
+					p.error strong {
+							color: #d63638;
+					}
+
+					p.error a.dismiss {
+							float: right;
+							text-decoration: none;
+							color: #d63638;
+					}
+			</style>
+			<div class="notice notice-error"><p class="error"><span class="dashicons dashicons-bell"></span><strong><?php _e('tinyShield: tinyShield has reported an issue with the license key. Requests are not being analyzed. Check your activation here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a>. Try deactivating and reactivating first, contact support if needed.', 'tinyshield');?> </strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && $options['tinyshield_disabled']): ?>
-			<div class="notice notice-warning"><p><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
+			<style>
+					p.warning {
+							position: relative;
+							margin-left: 35px;
+							padding: 1px;
+					}
+
+					p.warning span.dashicons-bell {
+							color: white;
+							background: #dba617;
+							position: absolute;
+							left: -50px;
+							padding: 9px;
+							top: -8px;
+					}
+
+					p.warning strong {
+							color: #dba617;
+					}
+
+					p.warning a.dismiss {
+							float: right;
+							text-decoration: none;
+							color: #dba617;
+					}
+			</style>
+
+			<div class="notice notice-warning"><p class="warning"><span class="dashicons dashicons-bell"></span><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && !is_null($options['subscription']) && $options['subscription'] == 'community' && $options['review_date'] <= current_time('timestamp') && empty(get_user_meta(get_current_user_id(), 'tinyshield_review_notice'))): ?>
@@ -988,7 +1068,7 @@ class tinyShield{
 						$perm_allowlist_entry = new stdClass();
 						$perm_allowlist_entry->expires = strtotime('+30 years', current_time('timestamp'));
 						$perm_allowlist_entry->ip_address = $ip;
-						
+
 						$cached_perm_allowlist[sha1($ip)] = json_encode($perm_allowlist_entry);
 					}else{
 						$invalid_ip = true;
