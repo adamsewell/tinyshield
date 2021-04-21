@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.6.2
+Version: 0.6.3
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -528,7 +528,9 @@ class tinyShield{
 			}
 		}else{
 			self::write_log('tinyShield: check_ip error');
-			self::write_log($response_code . ': ' . $response->get_error_message());
+			if(is_wp_error($response)){
+				self::write_log($response_code . ': ' . $response->get_error_message());
+			}
 
 			if($response_code == 403){
 				$options['license_error'] = true;
