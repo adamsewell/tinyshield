@@ -1287,7 +1287,7 @@ class tinyShield{
 				-->
 				<?php if($active_tab == 'settings'): ?>
 						<h2 class="title"><?php _e('Site Activation', 'tinyshield'); ?></h2>
-						<p><?php _e('Returning user or want to manage your account? See <a target="_blank" href="' . esc_url(self::$tinyshield_account_url) . '">your tinyShield account</a>.', 'tinyshield'); ?></p>
+						<p style="font-size: medium;"><strong><?php _e('Returning user or want to manage your account? See <a target="_blank" href="' . esc_url(self::$tinyshield_account_url) . '">your tinyShield account</a>.', 'tinyshield'); ?></strong></p>
 						<h3><?php _e('Activation Key', 'tinyshield'); ?></h3>
 
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
