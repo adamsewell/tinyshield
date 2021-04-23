@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 0.6.3
+Version: 1.0.0
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -1334,9 +1334,9 @@ class tinyShield{
 							</p>
 						</form>
 
-						<?php if(!is_null($options['subscription']) && $options['subscription'] == 'community' && !empty($options['site_activation_key'])): ?>
+						<?php if(!is_null($options['subscription']) && $options['subscription'] == 'community' && !empty($options['license_id']) && !empty($options['site_activation_key'])): ?>
 							<h3><?php _e('Upgrade To Premium Access', 'tinyshield'); ?></h3>
-									<p><?php _e('Gain access to the most comprehensive blocklist and allowlist feeds we have to offer by signing up for Premium Access. Not only do you get access to our comprehensive feeds, support for multiple sites and you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, premium features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
+									<p><?php _e('Gain access to the most comprehensive blocklist and allowlist feeds we have to offer by signing up for Premium Access. Not only do you get access to our comprehensive feeds and support for multiple sites, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note: premium features will not work (even if enabled) unless you have an active subscription.', 'tinyshield'); ?></p>
 									<p>
 										<a target="_blank" href="<?php echo esc_url(
 											add_query_arg(array(
