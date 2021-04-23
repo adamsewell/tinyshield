@@ -35,7 +35,7 @@ class tinyShield{
 
 	private static $tinyshield_report_url = 'https://endpoint.tinyshield.me/report';
 	private static $tinyshield_check_url = 'https://endpoint.tinyshield.me/checkv3';
-	private static $tinyshield_upgrade_url = 'https://tinyshield.me/upgrade-my-site/';
+	private static $tinyshield_upgrade_url = 'https://tinyshield.me/checkout/';
 	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activatev2';
 	private static $tinyshield_account_url = 'https://tinyshield.me/my-account/';
 
@@ -242,6 +242,7 @@ class tinyShield{
 
 			$default_options = array(
 				'subscription' => 'community',
+				'license_id' => '0',
 				'countries_to_block' => '',
 				'countries_to_allow' => '',
 				'report_failed_logins' => true,
@@ -488,6 +489,12 @@ class tinyShield{
 					//update the subscription level from the servers response
 					if($list_data->subscription != $options['subscription']){
 						$options['subscription'] = sanitize_text_field($list_data->subscription);
+						update_option('tinyshield_options', $options);
+					}
+
+					//set the license id for upgrades if applicable
+					if($list_data->license_id != $options['license_id']){
+						$options['license_id'] = absint($list_data->license_id);
 						update_option('tinyshield_options', $options);
 					}
 
@@ -978,6 +985,7 @@ class tinyShield{
 			$maybe_deactivate = self::deactivate_site($registration_data);
 
 			if(is_bool($maybe_deactivate) && $maybe_deactivate){
+				$options['subscription'] = '';
 				$options['site_activation_key'] = '';
 				$options['license_error'] = false;
 				update_option('tinyshield_options', $options);
@@ -1327,9 +1335,34 @@ class tinyShield{
 						</form>
 
 						<?php if(!is_null($options['subscription']) && $options['subscription'] == 'community' && !empty($options['site_activation_key'])): ?>
-							<h3><?php _e('Upgrade To Professional', 'tinyshield'); ?></h3>
-									<p><?php _e('Gain access to the most comprehensive blocklist and allowlist feeds we have to offer by signing up for Premium Access. Not only do you get access to our comprehensive feeds, you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, premium features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
-									<p><a target="_blank" href="<?php esc_attr_e(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Upgrade This Site', 'tinyshield'); ?></a></p>
+							<h3><?php _e('Upgrade To Premium Access', 'tinyshield'); ?></h3>
+									<p><?php _e('Gain access to the most comprehensive blocklist and allowlist feeds we have to offer by signing up for Premium Access. Not only do you get access to our comprehensive feeds, support for multiple sites and you also support the project and gain access to premium support. Perfect for professional and commercial sites. Also note, premium features will not work, even if enabled, unless you have an active subscription.', 'tinyshield'); ?></p>
+									<p>
+										<a target="_blank" href="<?php echo esc_url(
+											add_query_arg(array(
+												'edd_action' => 'sl_license_upgrade',
+												'license_id' => absint($options['license_id']),
+												'upgrade_id' => 3
+											),
+											self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Personal Plan - One Site', 'tinyshield'); ?>
+										</a>
+										<a target="_blank" href="<?php echo esc_url(
+											add_query_arg(array(
+												'edd_action' => 'sl_license_upgrade',
+												'license_id' => absint($options['license_id']),
+												'upgrade_id' => 1
+											),
+											self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Professional - Up to Five Sites', 'tinyshield'); ?>
+										</a>
+										<a target="_blank" href="<?php echo esc_url(
+											add_query_arg(array(
+												'edd_action' => 'sl_license_upgrade',
+												'license_id' => absint($options['license_id']),
+												'upgrade_id' => 2
+											),
+											self::$tinyshield_upgrade_url)); ?>" class="button button-primary"><?php _e('Agency - Unlimited Sites', 'tinyshield'); ?>
+										</a>
+									</p>
 						<?php endif; ?>
 
 						<hr />
