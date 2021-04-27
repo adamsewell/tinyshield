@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 1.0.0
+Version: 1.0.1
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -204,7 +204,7 @@ class tinyShield{
 				$nag_admin_dismiss_url = admin_url("admin.php?page=tinyshield.php&tab=" . $active_tab . "&dismiss_tinyshield_nag=1");
 				$plugin_review_url = "https://wordpress.org/support/plugin/tinyshield/reviews/#new-post";
 			?>
-			<div class="notice notice-success"><p class="review"><span class="dashicons dashicons-heart"></span><strong><?php _e('tinyShield: Are you seeing benefit out of tinyShield? Consider <a target="_blank" href="'. esc_attr(add_query_arg('site_activation_key', $options['site_activation_key'], self::$tinyshield_upgrade_url)) .'">upgrading to our professional plan</a> for lots of additional features or consider leaving us a <a target="_blank" href="' . esc_attr($plugin_review_url) . '">plugin review</a>!'); ?> <a href="<?php echo esc_url($nag_admin_dismiss_url); ?>" class="dismiss"><span class="dashicons dashicons-dismiss"></span></a></strong></p></div>
+			<div class="notice notice-success"><p class="review"><span class="dashicons dashicons-heart"></span><strong><?php _e('tinyShield: Are you seeing benefit out of tinyShield? Consider <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">upgrading to premium access</a> for lots of additional features or consider leaving us a <a target="_blank" href="' . esc_attr($plugin_review_url) . '">plugin review</a>!'); ?> <a href="<?php echo esc_url($nag_admin_dismiss_url); ?>" class="dismiss"><span class="dashicons dashicons-dismiss"></span></a></strong></p></div>
 		<?php endif; ?>
 <?php
 	}
