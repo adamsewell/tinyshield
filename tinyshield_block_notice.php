@@ -29,7 +29,6 @@
         border: .05rem solid #fff;
       }
 
-
       /*
        * Base structure
        */
@@ -51,7 +50,6 @@
       .cover-container {
         max-width: 42em;
       }
-
 
       /*
        * Header
@@ -95,7 +93,6 @@
         }
       }
 
-
       /*
        * Cover
        */
@@ -106,7 +103,6 @@
         padding: .75rem 1.25rem;
         font-weight: 700;
       }
-
 
       /*
        * Footer
