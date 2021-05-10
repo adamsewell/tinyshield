@@ -417,6 +417,12 @@ class tinyShield{
 				return true;
 			}
 
+			//bot check
+			if(tinyShieldFunctions::is_bot($ip)){
+				self::write_log('tinyShield: incoming ip has been detected as a bot: ' . $ip);
+				return true;
+			}
+
 			//check local cached allowlist
 			$cached_allowlist = get_option('tinyshield_cached_allowlist');
 			if(!empty($cached_allowlist) && array_key_exists(sha1($ip), $cached_allowlist)){

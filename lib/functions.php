@@ -5,6 +5,22 @@ class tinyShieldFunctions extends tinyShield{
     return (bool) preg_match('/^[0-9a-f]{40}$/i', $str);
   }
 
+  public static function is_bot($ip){
+    $useragent = (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
+
+    //check if googlebot but only if useragent says it's a Googlebot
+    if(!empty($useragent) && (stristr($useragent, 'Googlebot') || stristr($useragent, 'Google'))){
+      $rdns_host = wp_parse_url(gethostbyaddr($ip), PHP_URL_HOST);
+      $google_domains = array('google.com', 'googlebot.com');
+      
+      if(in_array(strtolower($rdns_host), $google_domains) && $ip == gethostbyname($ip)){
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public static function is_activated(){
     $options = get_option('tinyshield_options');
     if(!empty($options['site_activation_key'])){
