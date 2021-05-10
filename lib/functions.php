@@ -10,10 +10,31 @@ class tinyShieldFunctions extends tinyShield{
 
     //check if googlebot but only if useragent says it's a Googlebot
     if(!empty($useragent) && (stristr($useragent, 'Googlebot') || stristr($useragent, 'Google'))){
-      $rdns_host = wp_parse_url(gethostbyaddr($ip), PHP_URL_HOST);
+      $rdns = gethostbyaddr($ip);
       $google_domains = array('google.com', 'googlebot.com');
-      
-      if(in_array(strtolower($rdns_host), $google_domains) && $ip == gethostbyname($ip)){
+
+      //no rdns to verify, not a bot but could be malicious
+      if($rdns === $ip){
+        return false;
+      }
+
+      foreach($google_domains as $domain){
+        if(substr_compare($rdns, $domain, -strlen($domain)) === 0 && $ip == gethostname($rdns)){
+          return true;
+        }
+      }
+    }
+
+    //bing user agent
+    if(!empty($useragent) && stristr($useragent, 'bingbot')){
+      $rdns = gethostbyaddr($ip);
+
+      //no rdns to verify, not a bot but could be malicious
+      if($rdns === $ip){
+        return false;
+      }
+
+      if(substr_compare($rdns, 'search.msn.com', -strlen('search.msn.com') === 0) && $ip == gethostname($rdns)){
         return true;
       }
     }
