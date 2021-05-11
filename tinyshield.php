@@ -402,6 +402,7 @@ class tinyShield{
 
 		//check if valid ip and check the local allowlist
 		if(tinyShieldFunctions::is_activated() && $ip && !is_user_logged_in()){
+			self::write_log('tinyShield: incoming remote blocklist lookup: ' . $ip);
 
 			//check local perm allowlist
 			$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
@@ -417,12 +418,6 @@ class tinyShield{
 				return true;
 			}
 
-			//bot check
-			if(tinyShieldFunctions::is_bot($ip)){
-				self::write_log('tinyShield: incoming ip has been detected as a bot: ' . $ip);
-				return true;
-			}
-
 			//check local cached allowlist
 			$cached_allowlist = get_option('tinyshield_cached_allowlist');
 			if(!empty($cached_allowlist) && array_key_exists(sha1($ip), $cached_allowlist)){
@@ -435,6 +430,27 @@ class tinyShield{
 					update_option('tinyshield_cached_allowlist', $cached_allowlist);
 
 					self::write_log('tinyShield: incoming ip found in local allowlist and was allowed: ' . $ip);
+					return false;
+				}
+			}
+
+			//bot check
+			if($bot = tinyShieldFunctions::is_bot($ip)){
+				$cached_allowlist = json_decode($cached_allowlist);
+
+				if(is_array($cached_allowlist)){
+					$allow_bot = new stdClass();
+					$allow_bot->expires = strtotime('+1 hour', current_time('timestamp'));
+					$allow_bot->direction = 'inbound';
+					$allow_bot->action = 'allow';
+					$allow_bot->ip_address = $ip;
+					$allow_bot->rdns = $bot->rdns;
+					$allow_bot->last_attempt = current_time('timestamp');
+
+					$cached_allowlist[sha1($ip)] = json_encode($allow_bot);
+					update_option('tinyshield_cached_allowlist', $cached_allowlist);
+
+					self::write_log('tinyShield: incoming ip has been detected as a bot and was allowed: ' . $ip);
 					return false;
 				}
 			}
@@ -455,7 +471,6 @@ class tinyShield{
 			}
 
 			//ip does not exist locally at all, remote lookup needed
-			self::write_log('tinyShield: incoming remote blocklist lookup: ' . $ip);
 			if(self::check_ip($ip)){
 				return true;
 			}

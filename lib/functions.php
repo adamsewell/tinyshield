@@ -7,35 +7,38 @@ class tinyShieldFunctions extends tinyShield{
 
   public static function is_bot($ip){
     $useragent = (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
+    $supported_user_agents = array(
+      'googlebot' => 'googlebot.com',
+      'google' => 'google.com',
+      'bingbot' => 'search.msn.com',
+  		'yandex' => 'yandex.ru',
+  		'yandex' => 'yandex.com',
+  		'yandex' => 'yandex.net',
+      'applebot' => 'applebot.apple.com',
+      'baiduspider' => 'crawl.baidu.com'
+    );
 
-    //check if googlebot but only if useragent says it's a Googlebot
-    if(!empty($useragent) && (stristr($useragent, 'Googlebot') || stristr($useragent, 'Google'))){
-      $rdns = gethostbyaddr($ip);
-      $google_domains = array('google.com', 'googlebot.com');
+    if(!empty($useragent)){
+      foreach($supported_user_agents as $agent => $domain){
+        if(stristr($useragent, $agent)){
+          $rdns = gethostbyaddr($ip);
 
-      //no rdns to verify, not a bot but could be malicious
-      if($rdns === $ip){
-        return false;
-      }
+          //no rdns to verify, not a bot but could be impersonating
+          if($rdns === $ip){
+            return false;
+          }
 
-      foreach($google_domains as $domain){
-        if(substr_compare($rdns, $domain, -strlen($domain)) === 0 && $ip == gethostname($rdns)){
-          return true;
+          //now let's verify the user agent is who they say they are
+          if(substr_compare($rdns, $domain, -strlen($domain)) === 0 && $ip == gethostbyname($rdns)){
+            $bot = new stdClass();
+            $bot->agent = $agent;
+            $bot->rdns = $rdns;
+            $bot->domain = $domain;
+
+            return $bot;
+          }
+
         }
-      }
-    }
-
-    //bing user agent
-    if(!empty($useragent) && stristr($useragent, 'bingbot')){
-      $rdns = gethostbyaddr($ip);
-
-      //no rdns to verify, not a bot but could be malicious
-      if($rdns === $ip){
-        return false;
-      }
-
-      if(substr_compare($rdns, 'search.msn.com', -strlen('search.msn.com') === 0) && $ip == gethostname($rdns)){
-        return true;
       }
     }
 
