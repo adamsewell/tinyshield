@@ -448,6 +448,13 @@ class tinyShield{
 					$allow_bot->action = 'allow';
 					$allow_bot->ip_address = $ip;
 					$allow_bot->rdns = $bot->rdns;
+
+					$allow_bot->geo_ip = array(
+						'isp' => $bot->agent,
+						'country_name' => __('Bot Detected', 'tinyshield'),
+						'country_flag_emoji' => '🤖'
+					);
+
 					$allow_bot->last_attempt = current_time('timestamp');
 
 					$cached_allowlist[sha1($ip)] = json_encode($allow_bot);
