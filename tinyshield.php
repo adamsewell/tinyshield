@@ -439,7 +439,6 @@ class tinyShield{
 
 			//bot check
 			self::write_log('tinyShield: checking if bot');
-			$useragent = (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
 			if($bot = tinyShieldFunctions::is_bot($ip)){
 
 				if(is_array($cached_allowlist)){
