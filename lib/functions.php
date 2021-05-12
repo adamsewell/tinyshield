@@ -8,15 +8,15 @@ class tinyShieldFunctions extends tinyShield{
   public static function is_bot($ip){
     $useragent = (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
     $supported_user_agents = array(
-      'googlebot' => 'googlebot.com',
-      'google' => 'google.com',
-      'bingbot' => 'search.msn.com',
-  		'yandex' => 'yandex.ru',
-  		'yandex' => 'yandex.com',
-  		'yandex' => 'yandex.net',
-      'applebot' => 'applebot.apple.com',
-      'baiduspider' => 'crawl.baidu.com',
-      'pinterest' => 'pinterest.com'
+      'Googlebot' => 'googlebot.com',
+      'Google' => 'google.com',
+      'Bingbot' => 'search.msn.com',
+  		'Yandex' => 'yandex.ru',
+  		'Yandex' => 'yandex.com',
+  		'Yandex' => 'yandex.net',
+      'Applebot' => 'applebot.apple.com',
+      'Baiduspider' => 'crawl.baidu.com',
+      'Pinterest' => 'pinterest.com'
     );
 
     if(!empty($useragent)){
