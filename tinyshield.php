@@ -405,6 +405,7 @@ class tinyShield{
 			self::write_log('tinyShield: incoming remote blocklist lookup: ' . $ip);
 
 			//check local perm allowlist
+			self::write_log('tinyShield: checking perm allowlist');
 			$cached_perm_allowlist = get_option('tinyshield_cached_perm_allowlist');
 			if(!empty($cached_perm_allowlist) && array_key_exists(sha1($ip), $cached_perm_allowlist)){
 				self::write_log('tinyShield: incoming ip found in local perm allowlist and was allowed: ' . $ip);
@@ -412,6 +413,7 @@ class tinyShield{
 			}
 
 			//check local perm blocklist
+			self::write_log('tinyShield: checking perm blocklist');
 			$cached_perm_blocklist = get_option('tinyshield_cached_perm_blocklist');
 			if(!empty($cached_perm_blocklist) && array_key_exists(sha1($ip), $cached_perm_blocklist)){
 				self::write_log('tinyShield: incoming ip found in local perm blocklist and was blocked: ' . $ip);
@@ -419,6 +421,7 @@ class tinyShield{
 			}
 
 			//check local cached allowlist
+			self::write_log('tinyShield: checking cached allowlist');
 			$cached_allowlist = get_option('tinyshield_cached_allowlist');
 			if(!empty($cached_allowlist) && array_key_exists(sha1($ip), $cached_allowlist)){
 
@@ -435,8 +438,9 @@ class tinyShield{
 			}
 
 			//bot check
+			self::write_log('tinyShield: checking if bot');
+			$useragent = (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
 			if($bot = tinyShieldFunctions::is_bot($ip)){
-				$cached_allowlist = json_decode($cached_allowlist);
 
 				if(is_array($cached_allowlist)){
 					$allow_bot = new stdClass();
@@ -456,6 +460,7 @@ class tinyShield{
 			}
 
 			//check local cached blocklist
+			self::write_log('tinyShield: checking cached blocklist');
 			$cached_blocklist = get_option('tinyshield_cached_blocklist');
 			if(!empty($cached_blocklist) && array_key_exists(sha1($ip), $cached_blocklist)){
 
@@ -471,6 +476,7 @@ class tinyShield{
 			}
 
 			//ip does not exist locally at all, remote lookup needed
+			self::write_log('tinyShield: check check_ip');
 			if(self::check_ip($ip)){
 				return true;
 			}

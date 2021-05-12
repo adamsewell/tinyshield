@@ -15,7 +15,8 @@ class tinyShieldFunctions extends tinyShield{
   		'yandex' => 'yandex.com',
   		'yandex' => 'yandex.net',
       'applebot' => 'applebot.apple.com',
-      'baiduspider' => 'crawl.baidu.com'
+      'baiduspider' => 'crawl.baidu.com',
+      'pinterest' => 'pinterest.com'
     );
 
     if(!empty($useragent)){
