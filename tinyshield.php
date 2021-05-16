@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 1.0.1
+Version: 1.1.0
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -23,13 +23,24 @@ Author URI: https://tinyshield.me
 
 if(!defined('ABSPATH')) die();
 
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/blocklist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/allowlist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/activity_log_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_allowlist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blocklist_tables.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/upgrade/functions.php');
-include_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
+//load our library files
+require_once(plugin_dir_path(__FILE__) . 'lib/tables/blocklist_tables.php');
+require_once(plugin_dir_path(__FILE__) . 'lib/tables/allowlist_tables.php');
+require_once(plugin_dir_path(__FILE__) . 'lib/tables/activity_log_tables.php');
+require_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_allowlist_tables.php');
+require_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blocklist_tables.php');
+require_once(plugin_dir_path(__FILE__) . 'lib/upgrade/functions.php');
+require_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
+
+//load any modules
+$modules_dir = trailingslashit(plugin_dir_path(__FILE__) . 'modules');
+if(is_dir($modules_dir)){
+	foreach(new DirectoryIterator($modules_dir) as $file){
+		if(!$file->isDot()){
+			require_once($modules_dir . $file->getFilename());
+		}
+	}
+}
 
 class tinyShield{
 
@@ -258,6 +269,10 @@ class tinyShield{
 				'block_tor_exit_nodes' => false,
 				'review_date' => strtotime('+30 days'),
 				'license_error' => false,
+				'cloudflare_enabled' => false,
+				'cloudflare_email' => '',
+				'cloudflare_auth_key' => '',
+				'cloudflare_ips' => '',
 				'db_version' => '055'
 			);
 
@@ -550,6 +565,8 @@ class tinyShield{
 						$cached_blocklist[sha1($ip)] = json_encode($list_data);
 						update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
+						do_action('tinyshield_block_ip', $list_data);
+
 						return true;
 
 					}elseif($list_data->action == 'allow'){
@@ -562,6 +579,9 @@ class tinyShield{
 						$cached_allowlist[sha1($ip)] = json_encode($list_data);
 
 						update_option('tinyshield_cached_allowlist', $cached_allowlist);
+
+						do_action('tinyshield_allow_ip', $list_data);
+
 						return false;
 					}
 				}
@@ -585,9 +605,13 @@ class tinyShield{
 		$cached_allowlist = get_option('tinyshield_cached_allowlist');
 
 		if(is_array($cached_blocklist) && !empty($cached_blocklist)){
+
 			foreach($cached_blocklist as $iphash => $iphash_data){
 				$iphash_data = json_decode($iphash_data);
 				if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
+
+					do_action('tinyshield_blocklist_clear_ip', $iphash);
+
 					unset($cached_blocklist[$iphash]);
 				}
 			}
@@ -599,6 +623,9 @@ class tinyShield{
 			foreach($cached_allowlist as $iphash => $iphash_data){
 				$iphash_data = json_decode($iphash_data);
 				if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
+
+					do_action('tinyshield_allowlist_clear_ip', $iphash);
+
 					unset($cached_allowlist[$iphash]);
 				}
 			}
@@ -1233,6 +1260,8 @@ class tinyShield{
 			Delete IP Address from Blocklist Action
 		******************************************/
 		if(isset($_GET['action']) && $_GET['action'] == 'remove_from_blocklist' && tinyShieldFunctions::is_sha1($_GET['iphash']) && wp_verify_nonce($_GET['_wpnonce'], 'tinyshield-delete-blocklist-item')){
+			do_action('tinyshield_blocklist_clear_ip', $_GET['iphash']);
+
 			unset($cached_blocklist[$_GET['iphash']]);
 			update_option('tinyshield_cached_blocklist', $cached_blocklist);
 ?>
@@ -1476,6 +1505,16 @@ class tinyShield{
 										<?php endforeach; ?>
 									</select>
 								</p>
+						<?php endif; ?>
+
+						<?php if($options['subscription'] != 'community'): ?>
+							<h3><?php _e('Cloudflare Integration - <i>Premium Feature</i>', 'tinyshield'); ?></h3>
+							<p>When enabled with valid Cloudflare credentials, when an IP is blocked it will be passed to Cloudflare (assuming your site is already setup on Cloudflare) to be blocked prior to reaching your site. <strong>Feature disabled by default.</strong></p>
+							<p>
+								<input type="checkbox" name="options[cloudflare_enabled]" id="options[cloudflare_enabled]" <?php echo ($options['cloudflare_enabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[cloudflare_enabled]"><?php _e('Enable Cloudflare Integration?', 'tinyshield'); ?></label>
+								<input size="28" type="text" placeholder="<?php _e('Cloudflare Email', 'tinyshield'); ?>" name="options[cloudflare_email]" value="<?php (!empty($options['cloudflare_email']) ? esc_attr_e($options['cloudflare_email']) : ''); ?>" />
+								<input size="28" type="text" placeholder="<?php _e('Cloudflre Gloabl API Key', 'tinyshield'); ?>" name="options[cloudflare_auth_key]" value="<?php (!empty($options['cloudflare_auth_key']) ? esc_attr_e($options['cloudflare_auth_key']) : ''); ?>" />
+							</p>
 						<?php endif; ?>
 
 							<h3><?php _e('Disable tinyShield', 'tinyshield'); ?></h3>

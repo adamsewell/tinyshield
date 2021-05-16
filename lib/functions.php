@@ -1,7 +1,7 @@
 <?php
 
 class tinyShieldFunctions extends tinyShield{
-  
+
   public static function is_sha1($str) {
     return (bool) preg_match('/^[0-9a-f]{40}$/i', $str);
   }
@@ -13,7 +13,7 @@ class tinyShieldFunctions extends tinyShield{
       'Google' => 'google.com',
       'Bingbot' => 'search.msn.com',
   		'Yandex' => 'yandex.ru',
-  		'Yandex' => 'yandex.com',
+  		'YandexBot' => 'spider.yandex.com',
   		'Yandex' => 'yandex.net',
       'Applebot' => 'applebot.apple.com',
       'Baiduspider' => 'crawl.baidu.com',
