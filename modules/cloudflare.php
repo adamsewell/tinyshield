@@ -9,8 +9,7 @@
       $options = get_option('tinyshield_options');
       self::write_log('tinyShield: create_access_rule');
 
-      // if($options['cloudflare_enabled'] && !empty($options['cloudflare_email']) && !empty($options['cloudflare_auth_key']) && is_object($data) && !empty($data->ip_address)){
-      if(is_object($data) && !empty($data->ip_address)){
+      if($options['cloudflare_enabled'] && !empty($options['cloudflare_email']) && !empty($options['cloudflare_auth_key']) && is_object($data) && !empty($data->ip_address)){
 
         $response = wp_remote_post(
           'https://api.cloudflare.com/client/v4/user/firewall/access_rules/rules',
@@ -79,7 +78,7 @@
       $options = get_option('tinyshield_options');
       $cloudflare_ips = unserialize($options['cloudflare_ips']);
 
-      if(array_key_exists($iphash, $cloudflare_ips)){
+      if(!empty($options['cloudflare_email']) && !empty($options['cloudflare_auth_key']) && array_key_exists($iphash, $cloudflare_ips)){
         self::write_log('tinyShield: cloudflare cleanup');
 
         $response = wp_remote_request(
