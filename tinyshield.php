@@ -798,9 +798,46 @@ class tinyShield{
 
 	public static function log_failed_login($username){
 		$options = get_option('tinyshield_options');
+		$remote_ip = self::get_valid_ip();
+
+		if($tries = get_transient('tinyShield_' . sha1($remote_ip))){
+			$tries++;
+			if($tries >= 7){
+				$cached_blocklist = get_option('tinyshield_cached_blocklist');
+				$cached_allowlist = get_option('tinyshield_cached_allowlist');
+
+				$brute_force = new stdClass();
+				$brute_force->expires = strtotime('+24 hours', current_time('timestamp'));
+				$brute_force->direction = 'inbound';
+				$brute_force->action = 'block';
+				$brute_force->ip_address = $remote_ip;
+				$brute_force->rdns = gethostbyaddr($remote_ip);
+
+				$brute_force->geo_ip = array(
+					'isp' => '',
+					'country_name' => __('Brute Force Attacker', 'tinyshield'),
+					'country_flag_emoji' => '🔒'
+				);
+
+				$brute_force->last_attempt = current_time('timestamp');
+
+				$cached_blocklist[sha1($remote_ip)] = json_encode($brute_force);
+				update_option('tinyshield_cached_blocklist', $cached_blocklist);
+
+				unset($cached_allowlist[sha1($remote_ip)]);
+				update_option('tinyshield_cached_allowlist', $cached_allowlist);
+				delete_transient('tinyShield_' . sha1($remote_ip));
+
+				self::write_log('tinyShield: incoming ip has been detected as brute forcing the site and was blocked: ' . $ip);
+			}else{
+				delete_transient('tinyShield_' . sha1($remote_ip));
+				set_transient('tinyShield_' . sha1($remote_ip), $tries, 86400);
+			}
+		}else{
+			set_transient('tinyShield_' . sha1($remote_ip), 1, 86400);
+		}
 
 		if($options['report_failed_logins']){
-			$remote_ip = self::get_valid_ip();
 			if($remote_ip){
 				$response = wp_remote_post(
 					self::$tinyshield_report_url,
@@ -848,26 +885,22 @@ class tinyShield{
 
 		if($options['registration_form_honeypot']){
 			if(isset($_POST[$options['registration_form_honeypot_key'] . '_name']) && !empty($_POST[$options['registration_form_honeypot_key'] . '_name'])){
-				if(!$options['tinyshield_disabled']){
+				if(!$options['tinyshield_disabled'] && $options['report_user_registration']){
+					$remote_ip = self::get_valid_ip();
 
-					//if user registration is enabled
-					if($options['report_user_registration']){
-						$remote_ip = self::get_valid_ip();
-
-						if($remote_ip){
-							$response = wp_remote_post(
-								self::$tinyshield_report_url,
-								array(
-									'body' => array(
-										'ip_to_report' => $remote_ip,
-										'type' => 'user_registration',
-										'username_tried' => $username,
-										'reporting_site' => site_url(),
-										'time_of_occurance' => current_time('timestamp')
-									)
+					if($remote_ip){
+						$response = wp_remote_post(
+							self::$tinyshield_report_url,
+							array(
+								'body' => array(
+									'ip_to_report' => $remote_ip,
+									'type' => 'user_registration',
+									'username_tried' => $username,
+									'reporting_site' => site_url(),
+									'time_of_occurance' => current_time('timestamp')
 								)
-							);
-						}
+							)
+						);
 					}
 
 					if($options['pretty_deny'] && file_exists(ABSPATH . 'tinyshield_block_notice.php')){
