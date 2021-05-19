@@ -823,7 +823,7 @@ class tinyShield{
 				$brute_force->last_attempt = time();
 
 				do_action('tinyshield_block_ip', $brute_force);
-				
+
 				$cached_blocklist[sha1($remote_ip)] = json_encode($brute_force);
 				update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
@@ -1554,7 +1554,7 @@ class tinyShield{
 							<p>
 								<input type="checkbox" name="options[cloudflare_enabled]" id="options[cloudflare_enabled]" <?php echo ($options['cloudflare_enabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[cloudflare_enabled]"><?php _e('Enable Cloudflare Integration?', 'tinyshield'); ?></label>
 								<input size="28" type="text" placeholder="<?php _e('Cloudflare Email', 'tinyshield'); ?>" name="options[cloudflare_email]" value="<?php (!empty($options['cloudflare_email']) ? esc_attr_e($options['cloudflare_email']) : ''); ?>" />
-								<input size="28" type="text" placeholder="<?php _e('Cloudflre Gloabl API Key', 'tinyshield'); ?>" name="options[cloudflare_auth_key]" value="<?php (!empty($options['cloudflare_auth_key']) ? esc_attr_e($options['cloudflare_auth_key']) : ''); ?>" />
+								<input size="28" type="text" placeholder="<?php _e('Cloudflare Global API Key', 'tinyshield'); ?>" name="options[cloudflare_auth_key]" value="<?php (!empty($options['cloudflare_auth_key']) ? esc_attr_e($options['cloudflare_auth_key']) : ''); ?>" />
 							</p>
 						<?php endif; ?>
 
