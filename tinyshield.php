@@ -257,6 +257,7 @@ class tinyShield{
 				'countries_to_block' => '',
 				'countries_to_allow' => '',
 				'report_failed_logins' => true,
+				'brute_force_protection' => true,
 				'report_spam_comments' => true,
 				'report_user_registration' => true,
 				'report_user_enumeration' => true,
@@ -800,7 +801,7 @@ class tinyShield{
 		$options = get_option('tinyshield_options');
 		$remote_ip = self::get_valid_ip();
 
-		if($tries = get_transient('tinyShield_' . sha1($remote_ip))){
+		if($options['brute_force_protection'] && $tries = get_transient('tinyShield_' . sha1($remote_ip))){
 			$tries++;
 			if($tries >= 7){
 				$cached_blocklist = get_option('tinyshield_cached_blocklist');
@@ -1471,6 +1472,11 @@ class tinyShield{
 							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
+
+							<h3><?php _e('Brute Force Protection', 'tinyshield'); ?></h3>
+							<p>Toggle this to enable or disable automatic brute force protection. Will automatically block IP addresses that fail to login successfully after 10 tries in a 24 hour period. <strong>Enabled by default.</strong></p>
+							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
+
 
 							<h3><?php _e('Report Spam Comments', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable reporting spam comments. If enabled, this will report IPs of comments that you consider to be spam. Only occurs when you click the "spam" link under the comments section. <strong>Enabled by default.</strong></p>
