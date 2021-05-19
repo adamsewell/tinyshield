@@ -822,6 +822,8 @@ class tinyShield{
 
 				$brute_force->last_attempt = time();
 
+				do_action('tinyshield_block_ip', $brute_force);
+				
 				$cached_blocklist[sha1($remote_ip)] = json_encode($brute_force);
 				update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
