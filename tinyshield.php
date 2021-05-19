@@ -183,7 +183,7 @@ class tinyShield{
 			<div class="notice notice-warning"><p class="warning"><span class="dashicons dashicons-bell"></span><strong><?php _e('tinyShield: tinyShield is currently disabled and not protecting your site. To re-enable tinyShield, you can do that under the options here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a> under Options.', 'tinyshield');?></strong></p></div>
 		<?php endif; ?>
 
-		<?php if(current_user_can('manage_options') && !is_null($options['subscription']) && $options['subscription'] == 'community' && $options['review_date'] <= current_time('timestamp') && empty(get_user_meta(get_current_user_id(), 'tinyshield_review_notice'))): ?>
+		<?php if(current_user_can('manage_options') && !is_null($options['subscription']) && $options['subscription'] == 'community' && $options['review_date'] <= time() && empty(get_user_meta(get_current_user_id(), 'tinyshield_review_notice'))): ?>
 			<style>
 					p.review {
 							position: relative;
@@ -329,7 +329,7 @@ class tinyShield{
 			$ip = self::get_valid_ip();
 
 			$perm_allowlist_entry = new stdClass();
-			$perm_allowlist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+			$perm_allowlist_entry->expires = strtotime('+30 years', time());
 			$perm_allowlist_entry->ip_address = $ip;
 
 			$cached_perm_allowlist[sha1($ip)] = json_encode($perm_allowlist_entry);
@@ -368,7 +368,7 @@ class tinyShield{
 		if(!empty($cached_blocklist) && array_key_exists(sha1($ip), $cached_blocklist)){
 			$blocklist_data = json_decode($cached_blocklist[sha1($ip)]);
 			if(is_object($blocklist_data)){
-				$blocklist_data->last_attempt = current_time('timestamp');
+				$blocklist_data->last_attempt = time();
 
 				$cached_blocklist[sha1($ip)] = json_encode($blocklist_data);
 				update_option('tinyshield_cached_blocklist', $cached_blocklist);
@@ -442,7 +442,7 @@ class tinyShield{
 
 				$data = json_decode($cached_allowlist[sha1($ip)]);
 				if(is_object($data)){
-					$data->last_attempt = current_time('timestamp');
+					$data->last_attempt = time();
 
 					$cached_allowlist[sha1($ip)] = json_encode($data);
 					update_option('tinyshield_cached_allowlist', $cached_allowlist);
@@ -458,7 +458,7 @@ class tinyShield{
 
 				if(is_array($cached_allowlist)){
 					$allow_bot = new stdClass();
-					$allow_bot->expires = strtotime('+1 hour', current_time('timestamp'));
+					$allow_bot->expires = strtotime('+1 hour', time());
 					$allow_bot->direction = 'inbound';
 					$allow_bot->action = 'allow';
 					$allow_bot->ip_address = $ip;
@@ -470,7 +470,7 @@ class tinyShield{
 						'country_flag_emoji' => '🤖'
 					);
 
-					$allow_bot->last_attempt = current_time('timestamp');
+					$allow_bot->last_attempt = time();
 
 					$cached_allowlist[sha1($ip)] = json_encode($allow_bot);
 					update_option('tinyshield_cached_allowlist', $cached_allowlist);
@@ -487,7 +487,7 @@ class tinyShield{
 
 				$blocklist_data = json_decode($cached_blocklist[sha1($ip)]);
 				if(is_object($blocklist_data)){
-					$blocklist_data->last_attempt = current_time('timestamp');
+					$blocklist_data->last_attempt = time();
 					$cached_blocklist[sha1($ip)] = json_encode($blocklist_data);
 					update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
@@ -532,7 +532,7 @@ class tinyShield{
 
 				$list_data = json_decode($response_body);
 				if(is_object($list_data)){
-					$list_data->last_attempt = current_time('timestamp');
+					$list_data->last_attempt = time();
 
 					//update the subscription level from the servers response
 					if($list_data->subscription != $options['subscription']){
@@ -554,7 +554,7 @@ class tinyShield{
 					 (is_array($selected_countries_to_allow) && !in_array($list_data->geo_ip->country_code, $selected_countries_to_allow)) ||
 					 ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
 
-						$list_data->expires = strtotime('+24 hours', current_time('timestamp'));
+						$list_data->expires = strtotime('+24 hours', time());
 						$list_data->direction = $direction;
 						$list_data->action = 'block'; //sets action to block for logging purposes if country block or tor
 
@@ -571,7 +571,7 @@ class tinyShield{
 
 					}elseif($list_data->action == 'allow'){
 
-						$list_data->expires = strtotime('+1 hour', current_time('timestamp'));
+						$list_data->expires = strtotime('+1 hour', time());
 						$list_data->direction = $direction;
 						if($domain){
 							$list_data->called_domain = $domain;
@@ -608,7 +608,7 @@ class tinyShield{
 
 			foreach($cached_blocklist as $iphash => $iphash_data){
 				$iphash_data = json_decode($iphash_data);
-				if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
+				if(is_object($iphash_data) && $iphash_data->expires < time()){
 
 					do_action('tinyshield_blocklist_clear_ip', $iphash);
 
@@ -622,7 +622,7 @@ class tinyShield{
 		if(is_array($cached_allowlist) && !empty($cached_allowlist)){
 			foreach($cached_allowlist as $iphash => $iphash_data){
 				$iphash_data = json_decode($iphash_data);
-				if(is_object($iphash_data) && $iphash_data->expires < current_time('timestamp')){
+				if(is_object($iphash_data) && $iphash_data->expires < time()){
 
 					do_action('tinyshield_allowlist_clear_ip', $iphash);
 
@@ -738,7 +738,7 @@ class tinyShield{
 						'ip_to_report' => self::get_valid_ip(),
 						'type' => '404',
 						'reporting_site' => site_url(),
-						'time_of_occurance' => current_time('timestamp')
+						'time_of_occurance' => time()
 					)
 				)
 			);
@@ -772,7 +772,7 @@ class tinyShield{
 					'ip_to_report' => self::get_valid_ip(),
 					'type' => 'user_enumeration',
 					'reporting_site' => site_url(),
-					'time_of_occurance' => current_time('timestamp')
+					'time_of_occurance' => time()
 				)
 			)
 		);
@@ -790,7 +790,7 @@ class tinyShield{
 					'ip_to_report' => $comment->comment_author_IP,
 					'type' => 'spam_comment',
 					'reporting_site' => site_url(),
-					'time_of_occurance' => current_time('timestamp')
+					'time_of_occurance' => time()
 				))
 			);
 		}
@@ -807,7 +807,7 @@ class tinyShield{
 				$cached_allowlist = get_option('tinyshield_cached_allowlist');
 
 				$brute_force = new stdClass();
-				$brute_force->expires = strtotime('+24 hours', current_time('timestamp'));
+				$brute_force->expires = strtotime('+24 hours', time());
 				$brute_force->direction = 'inbound';
 				$brute_force->action = 'block';
 				$brute_force->ip_address = $remote_ip;
@@ -819,7 +819,7 @@ class tinyShield{
 					'country_flag_emoji' => '🔒'
 				);
 
-				$brute_force->last_attempt = current_time('timestamp');
+				$brute_force->last_attempt = time();
 
 				$cached_blocklist[sha1($remote_ip)] = json_encode($brute_force);
 				update_option('tinyshield_cached_blocklist', $cached_blocklist);
@@ -847,7 +847,7 @@ class tinyShield{
 							'type' => 'failed_logins',
 							'username_tried' => $username,
 							'reporting_site' => site_url(),
-							'time_of_occurance' => current_time('timestamp')
+							'time_of_occurance' => time()
 						)
 					)
 				);
@@ -870,7 +870,7 @@ class tinyShield{
 							'type' => 'user_registration',
 							'username_tried' => $username,
 							'reporting_site' => site_url(),
-							'time_of_occurance' => current_time('timestamp')
+							'time_of_occurance' => time()
 						)
 					)
 				);
@@ -897,7 +897,7 @@ class tinyShield{
 									'type' => 'user_registration',
 									'username_tried' => $username,
 									'reporting_site' => site_url(),
-									'time_of_occurance' => current_time('timestamp')
+									'time_of_occurance' => time()
 								)
 							)
 						);
@@ -965,7 +965,7 @@ class tinyShield{
 					'ip_to_report' => self::get_valid_ip(),
 					'type' => 'report_uri',
 					'reporting_site' => site_url(),
-					'time_of_occurance' => current_time('timestamp'),
+					'time_of_occurance' => time(),
 					'uri' => urlencode($url)
 				)
 			)
@@ -1144,7 +1144,7 @@ class tinyShield{
 							'ip_to_report' => $ip_to_report,
 							'type' => 'report_false_positive',
 							'reporting_site' => site_url(),
-							'time_of_occurance' => current_time('timestamp')
+							'time_of_occurance' => time()
 						)
 					)
 				);
@@ -1169,7 +1169,7 @@ class tinyShield{
 				foreach($ips as $ip){
 					if(!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
 						$perm_allowlist_entry = new stdClass();
-						$perm_allowlist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+						$perm_allowlist_entry->expires = strtotime('+30 years', time());
 						$perm_allowlist_entry->ip_address = $ip;
 
 						$cached_perm_allowlist[sha1($ip)] = json_encode($perm_allowlist_entry);
@@ -1199,7 +1199,7 @@ class tinyShield{
 				foreach($ips as $ip){
 					if(!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)){
 						$perm_blocklist_entry = new stdClass();
-						$perm_blocklist_entry->expires = strtotime('+30 years', current_time('timestamp'));
+						$perm_blocklist_entry->expires = strtotime('+30 years', time());
 						$perm_blocklist_entry->ip_address = $ip;
 						$cached_perm_blocklist[sha1($ip)] = json_encode($perm_blocklist_entry);
 
@@ -1254,8 +1254,8 @@ class tinyShield{
 			$new_bl_item = json_decode($cached_allowlist[$_GET['iphash']]);
 			if(is_object($new_bl_item)){
 				$new_bl_item->action = 'block';
-				$new_bl_item->date_added = current_time('timestamp');
-				$new_bl_item->expires = strtotime('+24 hours', current_time('timestamp'));
+				$new_bl_item->date_added = time();
+				$new_bl_item->expires = strtotime('+24 hours', time());
 
 				$cached_blocklist[$_GET['iphash']] = json_encode($new_bl_item);
 
@@ -1309,8 +1309,8 @@ class tinyShield{
 			$new_wl_item = json_decode($cached_blocklist[$_GET['iphash']]);
 			if(is_object($new_wl_item)){
 				$new_wl_item->action = 'allow';
-				$new_wl_item->date_added = current_time('timestamp');
-				$new_wl_item->expires = strtotime('+1 hour', current_time('timestamp'));
+				$new_wl_item->date_added = time();
+				$new_wl_item->expires = strtotime('+1 hour', time());
 
 				$cached_allowlist[$_GET['iphash']] = json_encode($new_wl_item);
 
