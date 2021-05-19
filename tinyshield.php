@@ -1466,32 +1466,32 @@ class tinyShield{
 						<h2 class="title"><?php _e('Options', 'tinyshield'); ?></h2>
 						<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
 							<h3><?php _e('Pretty Deny', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable presenting blocked visitors with a page explaining they've been blocked. Also gives the option to report false positives. If disabled, blocked visitors will be given a 403 Forbidden error with nothing else. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable presenting blocked visitors with a page explaining they've been blocked. Also gives the option to report false positives. If disabled, blocked visitors will be given a 403 Forbidden error with nothing else. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
 							<p><input type="checkbox" name="options[pretty_deny]" id="options[pretty_deny]" <?php echo ($options['pretty_deny']) ? 'checked' : 'unchecked' ?> /> <label for="options[pretty_deny]"><?php _e('Pretty Deny?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report Failed Logins', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable reporting failed logins to tinyShield. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Brute Force Protection', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable automatic brute force protection. Will automatically block IP addresses that fail to login successfully after 10 tries in a 24 hour period. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable automatic brute force protection. Will automatically block IP addresses that fail to login successfully after 10 tries in a 24 hour period. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
 							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
 
 
 							<h3><?php _e('Report Spam Comments', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable reporting spam comments. If enabled, this will report IPs of comments that you consider to be spam. Only occurs when you click the "spam" link under the comments section. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable reporting spam comments. If enabled, this will report IPs of comments that you consider to be spam. Only occurs when you click the "spam" link under the comments section. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
 							<p><input type="checkbox" name="options[report_spam_comments]" id="options[report_spam_comments]" <?php echo ($options['report_spam_comments']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_spam_comments]"><?php _e('Report Spam Comments?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Registration', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable reporting of user registration issues to tinyShield. We only send the IP address over to our servers for verification. Often times bots will try to register accounts to post spam or malicious links in posts. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable reporting of user registration issues to tinyShield. We only send the IP address over to our servers for verification. Often times bots will try to register accounts to post spam or malicious links in posts. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
 							<p><input type="checkbox" name="options[report_user_registration]" id="options[report_user_registration]" <?php echo ($options['report_user_registration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_registration]"><?php _e('Report User Registration?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report User Enumeration Attempts', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable reporting user enumeration attempts to tinyShield. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
 							<p><input type="checkbox" name="options[report_user_enumeration]" id="options[report_user_enumeration]" <?php echo ($options['report_user_enumeration']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_user_enumeration]"><?php _e('Report User Enumeration Attempts?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Enable the Registration Form honeypot?', 'tinyshield'); ?></h3>
-							<p>Toggle this to enable or disable a hidden honeypot field on the user registration page. Spambots will often try to create fake users, this will help prevent that. <strong>Enabled by default.</strong></p>
+							<p>Toggle this to enable or disable a hidden honeypot field on the user registration page. Spambots will often try to create fake users, this will help prevent that. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
 							<p><input type="checkbox" name="options[registration_form_honeypot]" id="options[registration_form_honeypot]" <?php echo ($options['registration_form_honeypot']) ? 'checked' : 'unchecked' ?> /> <label for="options[registration_form_honeypot]"><?php _e('Registration Honeypot?', 'tinyshield'); ?></label></p>
 
 							<h3><?php _e('Report 404', 'tinyshield'); ?></h3>
