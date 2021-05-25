@@ -32,7 +32,7 @@ require_once(plugin_dir_path(__FILE__) . 'lib/tables/perm_blocklist_tables.php')
 require_once(plugin_dir_path(__FILE__) . 'lib/upgrade/functions.php');
 require_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
 
-//load any modules
+//load any additional modules
 $modules_dir = trailingslashit(plugin_dir_path(__FILE__) . 'modules');
 if(is_dir($modules_dir)){
 	foreach(new DirectoryIterator($modules_dir) as $file){
@@ -811,7 +811,7 @@ class tinyShield{
 
 		if($options['brute_force_protection'] && $tries = get_transient('tinyShield_' . sha1($remote_ip))){
 			$tries++;
-			if($tries >= 7){
+			if($tries >= 10){
 				$cached_blocklist = get_option('tinyshield_cached_blocklist');
 				$cached_allowlist = get_option('tinyshield_cached_allowlist');
 
