@@ -274,7 +274,7 @@ class tinyShield{
 				'cloudflare_email' => '',
 				'cloudflare_auth_key' => '',
 				'cloudflare_ips' => '',
-				'db_version' => '055'
+				'db_version' => '056'
 			);
 
 			//upgrade routines
@@ -286,6 +286,14 @@ class tinyShield{
 			if(isset($options['db_version']) && $options['db_version'] == '040'){
 				tinyShieldUpgradeFunctions::upgrade_040_to_055();
 				$options['db_version'] = '055';
+			}
+
+			if($options['db_version'] === false){
+				$options['db_version'] = $default_options['db_version'];
+			}
+
+			if($options['registration_form_honeypot_key'] === false){
+				$options['registration_form_honeypot_key'] = $default_options['registration_form_honeypot_key'];
 			}
 
 			if(empty($options)){ //incase we need to set the default options
@@ -1016,19 +1024,19 @@ class tinyShield{
 		*****************************************/
 		if(isset($_POST['tinyshield_save_options']) && $_POST['tinyshield_action'] == 'options_save' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-update-options')) {
 			if(is_array($_POST['options']) && !empty($_POST['options'])){
-				foreach($options as $key => $value){
-					if(array_key_exists($key, $_POST['options'])){
-						if(is_null($value)){
+				foreach($_POST['options'] as $key => $value){
+					if(array_key_exists($key, $options)){
+						if(is_null($value) || empty($value)){
 							$options[$key] = false;
-						}elseif(is_array($_POST['options'][$key]) || is_object($_POST['options'][$key])){
-							$options[$key] = serialize($_POST['options'][$key]);
-						}elseif(filter_var($_POST['options'][$key], FILTER_VALIDATE_BOOLEAN)){
+						}elseif(is_array($value) || is_object($value)){
+							$options[$key] = serialize($value);
+						}elseif(filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true){
 							$options[$key] = true;
+						}elseif(filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === false){
+							$options[$key] = false;
 						}else{
-							$options[$key] = sanitize_text_field($value);
+							$options[$key] = filter_var($value, FILTER_SANITIZE_STRING);
 						}
-					}else{
-						$options[$key] = false;
 					}
 				}
 			}
@@ -1477,7 +1485,7 @@ class tinyShield{
 
 							<h3><?php _e('Brute Force Protection', 'tinyshield'); ?></h3>
 							<p>Toggle this to enable or disable automatic brute force protection. Will automatically block IP addresses that fail to login successfully after 10 tries in a 24 hour period. <strong><?php _e('Enabled by default.', 'tinyshield'); ?></strong></p>
-							<p><input type="checkbox" name="options[report_failed_logins]" id="options[report_failed_logins]" <?php echo ($options['report_failed_logins']) ? 'checked' : 'unchecked' ?> /> <label for="options[report_failed_logins]"><?php _e('Report Failed Logins?', 'tinyshield'); ?></label></p>
+							<p><input type="checkbox" name="options[brute_force_protection]" id="options[brute_force_protection]" <?php echo ($options['brute_force_protection']) ? 'checked' : 'unchecked' ?> /> <label for="options[brute_force_protection]"><?php _e('Enable Brute Force Protection?', 'tinyshield'); ?></label></p>
 
 
 							<h3><?php _e('Report Spam Comments', 'tinyshield'); ?></h3>
@@ -1553,8 +1561,8 @@ class tinyShield{
 							<p>When enabled with valid Cloudflare credentials, when an IP is blocked it will be passed to Cloudflare (assuming your site is already setup on Cloudflare) to be blocked prior to reaching your site. <strong>Feature disabled by default.</strong></p>
 							<p>
 								<input type="checkbox" name="options[cloudflare_enabled]" id="options[cloudflare_enabled]" <?php echo ($options['cloudflare_enabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[cloudflare_enabled]"><?php _e('Enable Cloudflare Integration?', 'tinyshield'); ?></label>
-								<input size="28" type="text" placeholder="<?php _e('Cloudflare Email', 'tinyshield'); ?>" name="options[cloudflare_email]" value="<?php (!empty($options['cloudflare_email']) ? esc_attr_e($options['cloudflare_email']) : ''); ?>" />
-								<input size="28" type="text" placeholder="<?php _e('Cloudflare Global API Key', 'tinyshield'); ?>" name="options[cloudflare_auth_key]" value="<?php (!empty($options['cloudflare_auth_key']) ? esc_attr_e($options['cloudflare_auth_key']) : ''); ?>" />
+								<input size="28" type="text" placeholder="<?php _e('Cloudflare Email', 'tinyshield'); ?>" id="options[cloudflare_email]" name="options[cloudflare_email]" value="<?php (!empty($options['cloudflare_email']) ? esc_attr_e($options['cloudflare_email']) : ''); ?>" />
+								<input size="28" type="text" placeholder="<?php _e('Cloudflare Global API Key', 'tinyshield'); ?>" id="options[cloudflare_auth_key]" name="options[cloudflare_auth_key]" value="<?php (!empty($options['cloudflare_auth_key']) ? esc_attr_e($options['cloudflare_auth_key']) : ''); ?>" />
 							</p>
 						<?php endif; ?>
 
