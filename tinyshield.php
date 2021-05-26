@@ -1514,7 +1514,7 @@ class tinyShield{
 								<p><input type="checkbox" name="options[block_tor_exit_nodes]" id="options[block_tor_exit_nodes]" <?php echo ($options['block_tor_exit_nodes']) ? 'checked' : 'unchecked' ?> /> <label for="options[block_tor_exit_nodes]"><?php _e('Block Tor Exit Nodes?', 'tinyshield'); ?></label></p>
 
 								<h3><?php _e('Inclusive Block Countries (GeoIP Filtering) - <i>Premium Feature</i>', 'tinyshield'); ?></h3>
-								<p>Select a country or multiple countries to block from accessing your site. <strong>No countries are selected by default.</strong></p>
+								<p>Select a country or multiple countries to block from accessing your site. <strong>No countries are selected by default. Do not use in conjuction with the Exclusive Block Countries option.</strong></p>
 								<p>
 									<?php
 										$blocked_selected_countries = unserialize($options['countries_to_block']);
@@ -1536,7 +1536,7 @@ class tinyShield{
 
 							<?php if($options['subscription'] != 'community'): ?>
 								<h3><?php _e('Exclusive Block Countries (GeoIP Filtering) - <i>Premium Feature</i>', 'tinyshield'); ?></h3>
-								<p>Select a country or multiple countries to allow access to your site assuming all countries are blocked by default. <strong>Feature disabled until a country is selected.</strong></p>
+								<p>Select a country or multiple countries to allow access to your site assuming all countries are blocked by default. Do not use in conjuction with the Inclusive Block Countries option. <strong>Feature disabled until a country is selected.</strong></p>
 								<p>
 									<?php
 										$allowed_selected_countries = unserialize($options['countries_to_allow']);
