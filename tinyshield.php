@@ -1024,26 +1024,26 @@ class tinyShield{
 		*****************************************/
 		if(isset($_POST['tinyshield_save_options']) && $_POST['tinyshield_action'] == 'options_save' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-update-options')) {
 			if(is_array($_POST['options']) && !empty($_POST['options'])){
-				foreach($_POST['options'] as $key => $value){
-					if(array_key_exists($key, $options)){
-						if(is_null($value) || empty($value)){
+				foreach($options as $key => $value){
+					if(array_key_exists($key, $_POST['options'])){
+						if(is_null($_POST['options'][$key]) || empty($_POST['options'][$key])){
 							$options[$key] = false;
-						}elseif(is_array($value) || is_object($value)){
-							$options[$key] = serialize($value);
-						}elseif(filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true){
+						}elseif(is_array($_POST['options'][$key]) || is_object($_POST['options'][$key])){
+							$options[$key] = serialize($_POST['options'][$key]);
+						}elseif(filter_var($_POST['options'][$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true){
 							$options[$key] = true;
-						}elseif(filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === false){
+						}elseif(filter_var($_POST['options'][$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === false){
 							$options[$key] = false;
 						}else{
-							$options[$key] = filter_var($value, FILTER_SANITIZE_STRING);
+							$options[$key] = filter_var($_POST['options'][$key], FILTER_SANITIZE_STRING);
 						}
+					}elseif($value === true && array_key_exists($key, $_POST['options']) === false){
+						$options[$key] = false;
 					}
 				}
 			}
-
 			update_option('tinyshield_options', $options);
 			$alerts = $success_messages['settings_updated'];
-
 		}
 
 		/*****************************************
