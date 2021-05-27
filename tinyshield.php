@@ -273,6 +273,7 @@ class tinyShield{
 				'cloudflare_enabled' => false,
 				'cloudflare_email' => '',
 				'cloudflare_auth_key' => '',
+				'cloudflare_zone_id' => '',
 				'cloudflare_ips' => '',
 				'db_version' => '056'
 			);
@@ -1563,6 +1564,7 @@ class tinyShield{
 								<input type="checkbox" name="options[cloudflare_enabled]" id="options[cloudflare_enabled]" <?php echo ($options['cloudflare_enabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[cloudflare_enabled]"><?php _e('Enable Cloudflare Integration?', 'tinyshield'); ?></label>
 								<input size="28" type="text" placeholder="<?php _e('Cloudflare Email', 'tinyshield'); ?>" id="options[cloudflare_email]" name="options[cloudflare_email]" value="<?php (!empty($options['cloudflare_email']) ? esc_attr_e($options['cloudflare_email']) : ''); ?>" />
 								<input size="28" type="text" placeholder="<?php _e('Cloudflare Global API Key', 'tinyshield'); ?>" id="options[cloudflare_auth_key]" name="options[cloudflare_auth_key]" value="<?php (!empty($options['cloudflare_auth_key']) ? esc_attr_e($options['cloudflare_auth_key']) : ''); ?>" />
+								<input size="28" type="text" placeholder="<?php _e('Cloudflare Zone ID', 'tinyshield'); ?>" id="options[cloudflare_zone_id]" name="options[cloudflare_zone_id]" value="<?php (!empty($options['cloudflare_zone_id']) ? esc_attr_e($options['cloudflare_zone_id']) : ''); ?>" />
 							</p>
 						<?php endif; ?>
 

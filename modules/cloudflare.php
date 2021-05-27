@@ -9,10 +9,10 @@
       $options = get_option('tinyshield_options');
       self::write_log('tinyShield: create_access_rule');
 
-      if($options['cloudflare_enabled'] && !empty($options['cloudflare_email']) && !empty($options['cloudflare_auth_key']) && is_object($data) && !empty($data->ip_address)){
+      if($options['cloudflare_enabled'] && !empty($options['cloudflare_email']) && !empty($options['cloudflare_auth_key']) && !empty($options['cloudflare_zone_id']) && is_object($data) && !empty($data->ip_address)){
 
         $response = wp_remote_post(
-          'https://api.cloudflare.com/client/v4/user/firewall/access_rules/rules',
+          'https://api.cloudflare.com/client/v4/zones/' . $options['cloudflare_zone_id'] . '/firewall/access_rules/rules',
           array(
             'headers' => array(
               'X-Auth-Email' => $options['cloudflare_email'],
@@ -78,11 +78,11 @@
       $options = get_option('tinyshield_options');
       $cloudflare_ips = unserialize($options['cloudflare_ips']);
 
-      if(!empty($options['cloudflare_email']) && !empty($options['cloudflare_auth_key']) && array_key_exists($iphash, $cloudflare_ips)){
+      if(!empty($options['cloudflare_email']) && !empty($options['cloudflare_auth_key']) && !empty($options['cloudflare_zone_id']) && array_key_exists($iphash, $cloudflare_ips)){
         self::write_log('tinyShield: cloudflare cleanup');
 
         $response = wp_remote_request(
-          'https://api.cloudflare.com/client/v4/user/firewall/access_rules/rules/' . $cloudflare_ips[$iphash],
+          'https://api.cloudflare.com/client/v4/zones/' . $options['cloudflare_zone_id'] . '/firewall/access_rules/rules/' . $cloudflare_ips[$iphash],
           array(
             'method' => 'DELETE',
             'headers' => array(
