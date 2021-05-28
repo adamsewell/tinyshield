@@ -1559,7 +1559,7 @@ class tinyShield{
 
 						<?php if($options['subscription'] != 'community'): ?>
 							<h3><?php _e('Cloudflare Integration - <i>Premium Feature</i>', 'tinyshield'); ?></h3>
-							<p>When enabled with valid Cloudflare credentials, when an IP is blocked it will be passed to Cloudflare (assuming your site is already setup on Cloudflare) to be blocked prior to reaching your site. <strong>Feature disabled by default.</strong></p>
+							<p><?php _e('When enabled with valid Cloudflare credentials, when an IP is blocked it will be passed to Cloudflare (assuming your site is already setup on Cloudflare) and will blocked prior to reaching your site. This option uses the Cloudflare Challenge option rather than Block, in case of false positives. <strong>Feature disabled by default.</strong>'); ?></p>
 							<p>
 								<input type="checkbox" name="options[cloudflare_enabled]" id="options[cloudflare_enabled]" <?php echo ($options['cloudflare_enabled']) ? 'checked' : 'unchecked' ?> /> <label for="options[cloudflare_enabled]"><?php _e('Enable Cloudflare Integration?', 'tinyshield'); ?></label>
 								<input size="28" type="text" placeholder="<?php _e('Cloudflare Email', 'tinyshield'); ?>" id="options[cloudflare_email]" name="options[cloudflare_email]" value="<?php (!empty($options['cloudflare_email']) ? esc_attr_e($options['cloudflare_email']) : ''); ?>" />
