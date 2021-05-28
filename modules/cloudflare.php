@@ -97,6 +97,7 @@
           $return = json_decode(wp_remote_retrieve_body($response));
 
           if($return->success){
+            self::write_log('tinyShield: cloudflare acceess rule deleted successfully with id ' . $iphash);
             unset($cloudflare_ips[$iphash]);
 
             $options['cloudflare_ips'] = serialize($cloudflare_ips);
@@ -104,6 +105,8 @@
 
             return true;
           }
+        }elseif(is_wp_error($response)){
+          self::write_log('tinyShield: cloudflare remote post error ' . $response->get_error_message());
         }
       }
 
