@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: tinyShield - Simple. Focused. Security.
-Version: 1.1.0
+Version: 1.1.1
 Description: tinyShield is a fast, effective, realtime, and crowd sourced protection plugin for WordPress. Easily block bots, brute force attempts, exploits and more without bloat.
 Plugin URI: https://tinyshield.me
 Author: tinyShield.me
@@ -36,7 +36,7 @@ require_once(plugin_dir_path(__FILE__) . 'lib/functions.php');
 $modules_dir = trailingslashit(plugin_dir_path(__FILE__) . 'modules');
 if(is_dir($modules_dir)){
 	foreach(new DirectoryIterator($modules_dir) as $file){
-		if(!$file->isDot()){
+		if(!$file->isDot() && $file->getType() === 'file' && $file->isReadable()){
 			require_once($modules_dir . $file->getFilename());
 		}
 	}
