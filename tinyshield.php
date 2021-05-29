@@ -149,7 +149,7 @@ class tinyShield{
 							color: #d63638;
 					}
 			</style>
-			<div class="notice notice-error"><p class="error"><span class="dashicons dashicons-bell"></span><strong><?php _e('tinyShield: tinyShield has reported an issue with the license key. Requests are not being analyzed. Check your activation here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a>. Try deactivating and reactivating first, contact support if needed.', 'tinyshield');?> </strong></p></div>
+			<div class="notice notice-error"><p class="error"><span class="dashicons dashicons-bell"></span><strong><?php _e('tinyShield: tinyShield has reported an issue with your license key. Traffic is not being analyzed. Check your activation here <a href="' . esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')) . '">tinyShield Settings</a>. Try deactivating and reactivating first, but contact support if needed.', 'tinyshield');?> </strong></p></div>
 		<?php endif; ?>
 
 		<?php if(current_user_can('manage_options') && $options['tinyshield_disabled']): ?>
