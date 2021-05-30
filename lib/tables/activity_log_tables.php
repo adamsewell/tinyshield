@@ -81,6 +81,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
     $cached_blocklist = get_option('tinyshield_cached_blocklist');
     $action_messages = array('allow' => '✅', 'block' => '⛔');
     $direction_icons = array('outbound' => 'Outbound', 'inbound' => 'Inbound');
+    $community_message = __('📡 <span style="color: orange">Premium Access Required</span> 🌎', 'tinyshield');
 
 		$per_page = 25;
 
@@ -101,9 +102,9 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
 				$data[] = array(
           'iphash' => $iphash,
           'action' => $action_messages[$iphash_data->action],
-          'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji : ''),
+          'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji : $community_message),
 					'ip_address' => $iphash_data->ip_address,
-          'isp' => (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->isp : ''),
+          'isp' => (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->isp : $community_message),
           'direction' => $direction_icons[$iphash_data->direction],
           'last_attempt' => $iphash_data->last_attempt,
           'rdns' => (!empty($iphash_data->called_domain) ? $iphash_data->called_domain : $iphash_data->rdns)

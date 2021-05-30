@@ -80,6 +80,7 @@ class tinyShield_BlockList_Table extends WP_List_Table{
 		$cached_blocklist = get_option('tinyshield_cached_blocklist');
 
 		$per_page = 25;
+    $community_message = __('📡 <span style="color: orange">Premium Access Required</span> 🌎', 'tinyshield');
 
 		$columns = $this->get_columns();
 		$hidden = array();
@@ -98,8 +99,8 @@ class tinyShield_BlockList_Table extends WP_List_Table{
           'ip_address' => $iphash_data->ip_address,
           'expires' => $iphash_data->expires,
           'last_attempt' => $iphash_data->last_attempt,
-          'isp' => $iphash_data->geo_ip->isp,
-          'origin' => (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji,
+          'isp' => (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->isp : $community_message),
+          'origin' =>  (!empty($iphash_data->geo_ip->region_name) ? $iphash_data->geo_ip->region_name . ', ' : '') . (!empty($iphash_data->geo_ip) ? $iphash_data->geo_ip->country_name . ' ' . $iphash_data->geo_ip->country_flag_emoji : $community_message),
           'rdns' => $iphash_data->rdns
 				);
 			}
