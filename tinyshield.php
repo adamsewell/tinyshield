@@ -1420,7 +1420,7 @@ class tinyShield{
 									</p>
 									<p><input size="56" type="text" placeholder="<?php _e('Contact Email Address', 'tinyshield'); ?>" name="activate[email]" value="" /></p>
 									<p><input size="56" type="text" placeholder="<?php _e('License Key (For Agencies or Multiple Sites)', 'tinyshield'); ?>" name="activate[association_key]" value="" /></p>
-									<p><input type="checkbox" name="activate[optin]" id="activate[optin]" checked /> <label for="activate[optin]"><?php _e('Can we contact you for marketing purposes?', 'tinyshield'); ?></label></p>
+									<p><input type="checkbox" name="activate[optin]" id="activate[optin]" checked /> <label for="activate[optin]"><?php _e('Would you like to be notified of product updates and marketing via email?', 'tinyshield'); ?></label></p>
 
 
 									<input type="hidden" name="activate[site]" value="<?php esc_attr_e(site_url()); ?>" />
