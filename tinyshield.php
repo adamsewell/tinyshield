@@ -559,6 +559,8 @@ class tinyShield{
 					$cached_allowlist[sha1($ip)] = json_encode($allow_bot);
 					update_option('tinyshield_cached_allowlist', $cached_allowlist);
 
+					do_action('tinyshield_allow_ip', $list_data);
+
 					self::write_log('tinyShield: incoming ip has been detected as a bot and was allowed: ' . $ip);
 					return false;
 				}
@@ -1774,8 +1776,8 @@ class tinyShield{
 						**********************************
 				-->
 				<?php if($active_tab == 'blocklist'): ?>
-					<h3>Blocklist</h3>
-					<p>These are addresses that have tried to visit your site and been found to be malicious. Requests from these addresses are blocked and will remain cached for 24 hours and then will be checked again.</p>
+					<h3><?php _e('Blocklist', 'tinyshield'); ?></h3>
+					<p><?php _e('These are addresses that have tried to visit your site and been found to be malicious. Requests from these addresses are blocked and will remain cached for 24 hours and then will be checked again.', 'tinyshield'); ?></p>
 					<hr />
 					<?php
 						$tinyShield_BlockList_Table = new tinyShield_BlockList_Table();
