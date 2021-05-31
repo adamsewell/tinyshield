@@ -265,7 +265,7 @@ class tinyShield{
 			$options = get_option('tinyshield_options');
 
 			wp_enqueue_script('select2', plugin_dir_url(__FILE__) . 'lib/js/select2.min.js', array('jquery'), '4.0.13', true);
-			wp_enqueue_script('chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.1/chart.min.js', array(), '3.3.1');
+			wp_enqueue_script('chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js', array(), '3.3.2');
 			wp_enqueue_script('tinyshield-custom', plugin_dir_url(__FILE__) . 'lib/js/tinyshield.custom.js', array('jquery', 'select2'), time(), true);
 
 			wp_enqueue_style('tinyshield-select2-css', plugin_dir_url(__FILE__) . 'lib/css/select2.min.css');
