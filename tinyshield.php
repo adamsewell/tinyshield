@@ -115,6 +115,7 @@ class tinyShield{
 			<hr />
 		</li>
 		<li>
+			<h4><?php _e('Last 7 Days Activity', 'tinyshield'); ?></h4>
 			<canvas id="tinyshield_dashboard_overview_chart" style="width: 100%"></canvas>
 		</li>
 	</ul>
