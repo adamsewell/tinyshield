@@ -1182,6 +1182,12 @@ class tinyShield{
 			Handle clearing of local blocklist
 		*****************************************/
 		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_blocklist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-blocklist')){
+			$cached_blocklist = get_option('tinyshield_cached_blocklist');
+
+			foreach($cached_blocklist as $iphash => $iphash_data){
+					do_action('tinyshield_blocklist_clear_ip', $iphash);
+			}
+
 			$cached_blocklist = array();
 			update_option('tinyshield_cached_blocklist', $cached_blocklist);
 
@@ -1192,6 +1198,12 @@ class tinyShield{
 			Handle clearing of local allowlist
 		*****************************************/
 		if(isset($_POST['tinyshield_action']) && $_POST['tinyshield_action'] == 'clear_cached_allowlist' && wp_verify_nonce($_POST['_wpnonce'], 'tinyshield-clear-local-allowlist')){
+			$cached_allowlist = get_option('tinyshield_cached_allowlist');
+
+			foreach($cached_allowlist as $iphash => $iphash_data){
+					do_action('tinyshield_allowlist_clear_ip', $iphash);
+			}
+
 			$cached_allowlist = array();
 			update_option('tinyshield_cached_allowlist', $cached_allowlist);
 
