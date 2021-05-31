@@ -57,6 +57,7 @@ class tinyShield{
 		add_action('admin_notices', 'tinyShield::notices', 99);
 		add_action('admin_init', 'tinyShield::update_options');
 		add_action('admin_enqueue_scripts', 'tinyShield::register_admin_resources');
+		add_action('wp_dashboard_setup', 'tinyShield::dashboard_widget');
 
 		add_action('current_screen', 'tinyShield::acknowledge_admin_notice');
 
@@ -86,6 +87,38 @@ class tinyShield{
 		add_action('login_form_register', 'tinyShield::registration_form_check');
 		add_action('register_form', 'tinyShield::display_registration_honeypot', 99);
 		add_action('login_head', 'tinyShield::registration_style', 99);
+	}
+
+	public static function dashboard_widget(){
+		if(current_user_can('manage_options')){
+			wp_add_dashboard_widget(
+				'tinyshield_dashboard_widget',
+				esc_html__('tinyShield Overview', 'tinyshield'),
+				'tinyShield::display_dashboard_widget'
+			);
+		}
+	}
+
+	public static function display_dashboard_widget(){
+		$options = get_option('tinyshield_options');
+
+		$subscriptions = array(
+      'community' => __('Community', 'tinyshield'),
+      'single_site' => 'Single Site',
+      'five_sites' => 'Five Sites',
+      'unlimited' => 'Unlimited Sites'
+    );
+?>
+	<ul>
+		<li>
+			<h4><?php _e('Subscription: ', 'tinyshield'); ?><strong><?php (!empty($options['subscription']) ? esc_attr_e($subscriptions[$options['subscription']]) : ''); ?></strong></h4>
+			<hr />
+		</li>
+		<li>
+			<canvas id="tinyshield_dashboard_overview_chart" style="width: 100%"></canvas>
+		</li>
+	</ul>
+<?php
 	}
 
 	public static function notices(){
@@ -227,11 +260,51 @@ class tinyShield{
 	}
 
 	public static function register_admin_resources($page){
-		if($page == 'toplevel_page_tinyshield'){
+		if($page == 'toplevel_page_tinyshield' || $page == 'index.php'){
+			$options = get_option('tinyshield_options');
+
 			wp_enqueue_script('select2', plugin_dir_url(__FILE__) . 'lib/js/select2.min.js', array('jquery'), '4.0.13', true);
-			wp_enqueue_script('tinyshield-select2-custom', plugin_dir_url(__FILE__) . 'lib/js/tinyshield.custom.js', array('jquery', 'select2'), '1.0.0', true);
+			wp_enqueue_script('chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.1/chart.min.js', array(), '3.3.1');
+			wp_enqueue_script('tinyshield-custom', plugin_dir_url(__FILE__) . 'lib/js/tinyshield.custom.js', array('jquery', 'select2'), time(), true);
+
 			wp_enqueue_style('tinyshield-select2-css', plugin_dir_url(__FILE__) . 'lib/css/select2.min.css');
 			wp_enqueue_style('tinyshield-css', plugin_dir_url(__FILE__) . 'lib/css/tinyshield.css');
+
+			$stats = unserialize($options['tinyshield_stats']);
+
+			wp_localize_script('tinyshield-custom', 'tinyshield', array(
+				'nonce' => wp_create_nonce('tinyshield-nonce'),
+				'data' => array(
+						'allowed' => array(
+							(!empty($stats['allowed'][strtotime('-6 days', strtotime('today'))]) ? absint($stats['allowed'][strtotime('-6 days', strtotime('today'))]) : 0),
+							(!empty($stats['allowed'][strtotime('-5 days', strtotime('today'))]) ? absint($stats['allowed'][strtotime('-5 days', strtotime('today'))]) : 0),
+							(!empty($stats['allowed'][strtotime('-4 days', strtotime('today'))]) ? absint($stats['allowed'][strtotime('-4 days', strtotime('today'))]) : 0),
+							(!empty($stats['allowed'][strtotime('-3 days', strtotime('today'))]) ? absint($stats['allowed'][strtotime('-3 days', strtotime('today'))]) : 0),
+							(!empty($stats['allowed'][strtotime('-2 days', strtotime('today'))]) ? absint($stats['allowed'][strtotime('-2 days', strtotime('today'))]) : 0),
+							(!empty($stats['allowed'][strtotime('yesterday')]) ? absint($stats['allowed'][strtotime('yesterday')]) : 0),
+							(!empty($stats['allowed'][strtotime('today')]) ? absint($stats['allowed'][strtotime('today')]) : 0),
+						),
+						'blocked' => array(
+							(!empty($stats['blocked'][strtotime('-6 days', strtotime('today'))]) ? absint($stats['blocked'][strtotime('-6 days', strtotime('today'))]) : 0),
+							(!empty($stats['blocked'][strtotime('-5 days', strtotime('today'))]) ? absint($stats['blocked'][strtotime('-5 days', strtotime('today'))]) : 0),
+							(!empty($stats['blocked'][strtotime('-4 days', strtotime('today'))]) ? absint($stats['blocked'][strtotime('-4 days', strtotime('today'))]) : 0),
+							(!empty($stats['blocked'][strtotime('-3 days', strtotime('today'))]) ? absint($stats['blocked'][strtotime('-3 days', strtotime('today'))]) : 0),
+							(!empty($stats['blocked'][strtotime('-2 days', strtotime('today'))]) ? absint($stats['blocked'][strtotime('-2 days', strtotime('today'))]) : 0),
+							(!empty($stats['blocked'][strtotime('yesterday')]) ? absint($stats['blocked'][strtotime('yesterday')]) : 0),
+							(!empty($stats['blocked'][strtotime('today')]) ? absint($stats['blocked'][strtotime('today')]) : 0),
+						)
+
+				),
+				'labels' => array(
+					date(get_option('date_format'), strtotime('-6 days', strtotime('today'))),
+					date(get_option('date_format'), strtotime('-5 days', strtotime('today'))),
+					date(get_option('date_format'), strtotime('-4 days', strtotime('today'))),
+					date(get_option('date_format'), strtotime('-3 days', strtotime('today'))),
+					date(get_option('date_format'), strtotime('-2 days', strtotime('today'))),
+					date(get_option('date_format'), strtotime('yesterday')),
+					date(get_option('date_format'), strtotime('today')),
+				),
+			));
 		}
 	}
 
@@ -275,6 +348,7 @@ class tinyShield{
 				'cloudflare_auth_key' => '',
 				'cloudflare_zone_id' => '',
 				'cloudflare_ips' => '',
+				'tinyshield_stats' => '',
 				'db_version' => '056'
 			);
 
