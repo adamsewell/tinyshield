@@ -22,7 +22,7 @@
             )
           ));
         }
-        
+
         update_option('tinyshield_options', $options);
       }else{
         $stats = unserialize($options['tinyshield_stats']);
