@@ -772,7 +772,7 @@ class tinyShield{
 			if(!empty($response->message) && $response->message == 'activated'){
 				return $response;
 			}elseif(!empty($response->message)){
-				return sanitize_text_field($response->message);
+				return filter_var($response->message, FILTER_SANITIZE_STRING);
 			}else{
 				return false;
 			}
@@ -1130,11 +1130,11 @@ class tinyShield{
 			if(!empty($_POST['activate']['fname']) && !empty($_POST['activate']['lname']) && !empty($_POST['activate']['email'])){
 				$registration_data = array(
 					'action' => 'activate',
-					'fname' => sanitize_text_field($_POST['activate']['fname']),
-					'lname' => sanitize_text_field($_POST['activate']['lname']),
-					'email' => sanitize_text_field($_POST['activate']['email']),
-					'optin' => sanitize_text_field($_POST['activate']['optin']),
-					'association_key' => sanitize_text_field($_POST['activate']['association_key']),
+					'fname' => filter_var($_POST['activate']['fname'], FILTER_SANITIZE_STRING),
+					'lname' => filter_var($_POST['activate']['lname'], FILTER_SANITIZE_STRING),
+					'email' => filter_var($_POST['activate']['email'], FILTER_SANITIZE_EMAIL),
+					'optin' => filter_var($_POST['activate']['optin'], FILTER_SANITIZE_STRING),
+					'association_key' => filter_var($_POST['activate']['association_key'], FILTER_SANITIZE_STRING),
 					'site' => esc_url_raw($_POST['activate']['site'])
 				);
 
