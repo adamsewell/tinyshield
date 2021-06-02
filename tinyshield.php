@@ -615,62 +615,60 @@ class tinyShield{
 			self::write_log('tinyShield: remote blocklist lookup response');
 			self::write_log('tinyShield: ' . $response_body);
 
-			if(!empty($response_body)){
+			$list_data = json_decode($response_body);
 
-				$list_data = json_decode($response_body);
-				if(is_object($list_data)){
-					$list_data->last_attempt = time();
+			if(!empty($response_body) && is_object($list_data)){
+				$list_data->last_attempt = time();
 
-					//update the subscription level from the servers response
-					if($list_data->subscription != $options['subscription']){
-						$options['subscription'] = sanitize_text_field($list_data->subscription);
-						update_option('tinyshield_options', $options);
+				//update the subscription level from the servers response
+				if($list_data->subscription != $options['subscription']){
+					$options['subscription'] = filter_var($list_data->subscription, FILTER_SANITIZE_STRING);
+					update_option('tinyshield_options', $options);
+				}
+
+				//set the license id for upgrades if applicable
+				if($list_data->license_id != $options['license_id']){
+					$options['license_id'] = absint($list_data->license_id);
+					update_option('tinyshield_options', $options);
+				}
+
+				$selected_countries_to_block = unserialize($options['countries_to_block']);
+				$selected_countries_to_allow = unserialize($options['countries_to_allow']);
+
+				if($list_data->action == 'block' ||
+				 (is_array($selected_countries_to_block) && in_array($list_data->geo_ip->country_code, $selected_countries_to_block)) ||
+				 (is_array($selected_countries_to_allow) && !in_array($list_data->geo_ip->country_code, $selected_countries_to_allow)) ||
+				 ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
+
+					$list_data->expires = strtotime('+24 hours', time());
+					$list_data->direction = $direction;
+					$list_data->action = 'block'; //sets action to block for logging purposes if country block or tor
+
+					if($domain){
+						$list_data->called_domain = $domain;
 					}
 
-					//set the license id for upgrades if applicable
-					if($list_data->license_id != $options['license_id']){
-						$options['license_id'] = absint($list_data->license_id);
-						update_option('tinyshield_options', $options);
+					$cached_blocklist[sha1($ip)] = json_encode($list_data);
+					update_option('tinyshield_cached_blocklist', $cached_blocklist);
+
+					do_action('tinyshield_block_ip', $list_data);
+
+					return true;
+
+				}elseif($list_data->action == 'allow'){
+
+					$list_data->expires = strtotime('+1 hour', time());
+					$list_data->direction = $direction;
+					if($domain){
+						$list_data->called_domain = $domain;
 					}
+					$cached_allowlist[sha1($ip)] = json_encode($list_data);
 
-					$selected_countries_to_block = unserialize($options['countries_to_block']);
-					$selected_countries_to_allow = unserialize($options['countries_to_allow']);
+					update_option('tinyshield_cached_allowlist', $cached_allowlist);
 
-					if($list_data->action == 'block' ||
-					 (is_array($selected_countries_to_block) && in_array($list_data->geo_ip->country_code, $selected_countries_to_block)) ||
-					 (is_array($selected_countries_to_allow) && !in_array($list_data->geo_ip->country_code, $selected_countries_to_allow)) ||
-					 ($options['block_tor_exit_nodes'] && $list_data->is_tor_exit_node == 'yes')){
+					do_action('tinyshield_allow_ip', $list_data);
 
-						$list_data->expires = strtotime('+24 hours', time());
-						$list_data->direction = $direction;
-						$list_data->action = 'block'; //sets action to block for logging purposes if country block or tor
-
-						if($domain){
-							$list_data->called_domain = $domain;
-						}
-
-						$cached_blocklist[sha1($ip)] = json_encode($list_data);
-						update_option('tinyshield_cached_blocklist', $cached_blocklist);
-
-						do_action('tinyshield_block_ip', $list_data);
-
-						return true;
-
-					}elseif($list_data->action == 'allow'){
-
-						$list_data->expires = strtotime('+1 hour', time());
-						$list_data->direction = $direction;
-						if($domain){
-							$list_data->called_domain = $domain;
-						}
-						$cached_allowlist[sha1($ip)] = json_encode($list_data);
-
-						update_option('tinyshield_cached_allowlist', $cached_allowlist);
-
-						do_action('tinyshield_allow_ip', $list_data);
-
-						return false;
-					}
+					return false;
 				}
 			}
 		}else{
