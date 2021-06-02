@@ -123,7 +123,7 @@ class tinyShield_ActivityLog_Table extends WP_List_Table{
     //format the date now that we're sorted
     foreach($data as &$data_entry){
       if($data_entry['last_attempt']){
-        $data_entry['last_attempt'] = date_i18n(get_option('date_format'), $data_entry['last_attempt']) . ' at ' . date_i18n(get_option('time_format'), $data_entry['last_attempt']);
+        $data_entry['last_attempt'] = wp_date(get_option('date_format'), $data_entry['last_attempt']) . ' at ' . wp_date(get_option('time_format'), $data_entry['last_attempt']);
       }
     }
 
