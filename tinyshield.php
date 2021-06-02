@@ -560,7 +560,7 @@ class tinyShield{
 					$cached_allowlist[sha1($ip)] = json_encode($allow_bot);
 					update_option('tinyshield_cached_allowlist', $cached_allowlist);
 
-					do_action('tinyshield_allow_ip', $list_data);
+					do_action('tinyshield_allow_ip', $allow_bot);
 
 					self::write_log('tinyShield: incoming ip has been detected as a bot and was allowed: ' . $ip);
 					return false;
