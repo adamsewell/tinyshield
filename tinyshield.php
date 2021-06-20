@@ -297,13 +297,13 @@ class tinyShield{
 
 				),
 				'labels' => array(
-					date(get_option('date_format'), strtotime('-6 days', strtotime('today'))),
-					date(get_option('date_format'), strtotime('-5 days', strtotime('today'))),
-					date(get_option('date_format'), strtotime('-4 days', strtotime('today'))),
-					date(get_option('date_format'), strtotime('-3 days', strtotime('today'))),
-					date(get_option('date_format'), strtotime('-2 days', strtotime('today'))),
-					date(get_option('date_format'), strtotime('yesterday')),
-					date(get_option('date_format'), strtotime('today')),
+					wp_date(get_option('date_format'), strtotime('-6 days', strtotime('today'))),
+					wp_date(get_option('date_format'), strtotime('-5 days', strtotime('today'))),
+					wp_date(get_option('date_format'), strtotime('-4 days', strtotime('today'))),
+					wp_date(get_option('date_format'), strtotime('-3 days', strtotime('today'))),
+					wp_date(get_option('date_format'), strtotime('-2 days', strtotime('today'))),
+					wp_date(get_option('date_format'), strtotime('yesterday')),
+					wp_date(get_option('date_format'), strtotime('today')),
 				),
 			));
 		}
