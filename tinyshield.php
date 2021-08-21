@@ -1455,10 +1455,10 @@ class tinyShield{
 				<h2> <?php _e('tinyShield - Simple. Focused. Security.', 'tinyshield') ?></h2>
 				<h2 class="nav-tab-wrapper">
 					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=log')); ?>" class="nav-tab <?php echo $active_tab == 'log' ? 'nav-tab-active' : ''; ?>">Activity Log</a>
-					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=perm-allowlist')); ?>" class="nav-tab <?php echo $active_tab == 'perm-allowlist' ? 'nav-tab-active' : ''; ?>">Permanent Allowlist (<?php echo count($cached_perm_allowlist); ?>)</a>
-					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=perm-blocklist')); ?>" class="nav-tab <?php echo $active_tab == 'perm-blocklist' ? 'nav-tab-active' : ''; ?>">Permanent Blocklist (<?php echo count($cached_perm_blocklist); ?>)</a>
-					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=allowlist')); ?>" class="nav-tab <?php echo $active_tab == 'allowlist' ? 'nav-tab-active' : ''; ?>">Allowlist (<?php echo count($cached_allowlist); ?>)</a>
-					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=blocklist')); ?>" class="nav-tab <?php echo $active_tab == 'blocklist' ? 'nav-tab-active' : ''; ?>">Blocklist (<?php echo count($cached_blocklist); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=perm-allowlist')); ?>" class="nav-tab <?php echo $active_tab == 'perm-allowlist' ? 'nav-tab-active' : ''; ?>">Permanent Allowlist (<?php echo absint(count($cached_perm_allowlist)); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=perm-blocklist')); ?>" class="nav-tab <?php echo $active_tab == 'perm-blocklist' ? 'nav-tab-active' : ''; ?>">Permanent Blocklist (<?php echo absint(count($cached_perm_blocklist)); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=allowlist')); ?>" class="nav-tab <?php echo $active_tab == 'allowlist' ? 'nav-tab-active' : ''; ?>">Allowlist (<?php echo absint(count($cached_allowlist)); ?>)</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=blocklist')); ?>" class="nav-tab <?php echo $active_tab == 'blocklist' ? 'nav-tab-active' : ''; ?>">Blocklist (<?php echo absint(count($cached_blocklist)); ?>)</a>
 					<a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')); ?>" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">Settings</a>
 				</h2>
 
