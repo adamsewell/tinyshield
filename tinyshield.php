@@ -49,6 +49,7 @@ class tinyShield{
 	private static $tinyshield_upgrade_url = 'https://tinyshield.me/checkout/';
 	private static $tinyshield_activation_url = 'https://endpoint.tinyshield.me/activatev2';
 	private static $tinyshield_account_url = 'https://tinyshield.me/my-account/';
+	private static $tinyshield_news_feed = 'https://tinyshield.me/feed/';
 
 	public function __construct(){
 		register_activation_hook(__FILE__, 'tinyShield::on_activation');
@@ -108,14 +109,32 @@ class tinyShield{
       'five_sites' => 'Five Sites',
       'unlimited' => 'Unlimited Sites'
     );
+
+		$news_feed = fetch_feed(self::$tinyshield_news_feed);
+
 ?>
 	<ul>
+		<?php if(!is_wp_error($news_feed)): ?>
 		<li>
-			<h4><?php _e('Subscription: ', 'tinyshield'); ?><strong><?php (!empty($options['subscription']) ? esc_attr_e($subscriptions[$options['subscription']]) : ''); ?></strong></h4>
+			<?php
+				$max_feed = $news_feed->get_item_quantity(1);
+				$latest_news = $news_feed->get_items(0, 1);
+				$url = $latest_news[0]->get_permalink();
+				$title = $latest_news[0]->get_title();
+			?>
+			<h4>
+				<?php _e('Latest News: ', 'tinyshield'); ?>
+				<a target="_blank" href="<?php echo esc_url($url); ?>"><?php esc_html_e($title); ?></a>
+			</h4>
+			<hr />
+		</li>
+		<?php endif; ?>
+		<li>
+			<h4><?php _e('Your Subscription: ', 'tinyshield'); ?><strong><?php (!empty($options['subscription']) ? esc_attr_e($subscriptions[$options['subscription']]) : ''); ?></strong></h4>
 			<hr />
 		</li>
 		<li>
-			<h4><?php _e('Last 7 Days Activity', 'tinyshield'); ?></h4>
+			<h4><?php _e('Last 7 Days Activity - Time Zone: ', 'tinyshield'); esc_attr_e(wp_timezone_string()); ?></h4>
 			<canvas id="tinyshield_dashboard_overview_chart" style="width: 100%"></canvas>
 		</li>
 	</ul>
@@ -265,7 +284,7 @@ class tinyShield{
 			$options = get_option('tinyshield_options');
 
 			wp_enqueue_script('select2', plugin_dir_url(__FILE__) . 'lib/js/select2.min.js', array('jquery'), '4.0.13', true);
-			wp_enqueue_script('chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js', array(), '3.3.2');
+			wp_enqueue_script('chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.5.1/chart.min.js', array(), '3.5.1');
 			wp_enqueue_script('tinyshield-custom', plugin_dir_url(__FILE__) . 'lib/js/tinyshield.custom.js', array('jquery', 'select2'), time(), true);
 
 			wp_enqueue_style('tinyshield-select2-css', plugin_dir_url(__FILE__) . 'lib/css/select2.min.css');
