@@ -2,6 +2,29 @@
 
 class tinyShieldFunctions extends tinyShield{
 
+  public static function deactivate_site($registration_data){
+    $return = wp_remote_post(
+      tinyShield::$tinyshield_activation_url,
+      array(
+        'body' => array(
+          'site' => $registration_data['site'],
+          'action' => 'deactivate',
+          'activation_key' => $registration_data['activation_key']
+        )
+      )
+    );
+
+    if(is_wp_error($return) || wp_remote_retrieve_response_code($return) != 200){
+      return false;
+    }
+
+    if(in_array(wp_remote_retrieve_body($return), array('site_key_deactivated', 'site_key_mismatch'))){
+      return true;
+    }
+
+    return false;
+  }
+
   public static function is_sha1($str) {
     return (bool) preg_match('/^[0-9a-f]{40}$/i', $str);
   }
