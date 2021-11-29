@@ -76,6 +76,7 @@
         add_submenu_page(self::$plugin_basename, 'Blocklist', 'Blocklist', 'manage_options', 'tinyshield.php&tab=blocklist', 'tinyShield_Admin::display_options');
         add_submenu_page(self::$plugin_basename, 'Settings', 'Settings', 'manage_options', 'tinyshield.php&tab=settings', 'tinyShield_Admin::display_options');
         add_submenu_page(self::$plugin_basename, 'Activation', 'Activation', 'manage_options', 'tinyshield.php&tab=activation', 'tinyShield_Admin::display_options');
+        add_submenu_page(self::$plugin_basename, 'Diagnostics', 'Diagnostics', 'manage_options', 'tinyshield.php&tab=diagnostics', 'tinyShield_Admin::display_options');
       }
     }
 
@@ -613,6 +614,7 @@
             <a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=blocklist')); ?>" class="nav-tab <?php echo $active_tab == 'blocklist' ? 'nav-tab-active' : ''; ?>"><?php _e('Blocklist', 'tinyshield'); ?> (<?php echo absint(count($cached_blocklist)); ?>)</a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=settings')); ?>" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>"><?php _e('Settings', 'tinyshield'); ?></a>
             <a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=activation')); ?>" class="nav-tab <?php echo $active_tab == 'activation' ? 'nav-tab-active' : ''; ?>"> <?php _e('Activation', 'tinyshield'); ?></a>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=tinyshield.php&tab=diagnostics')); ?>" class="nav-tab <?php echo $active_tab == 'diagnostics' ? 'nav-tab-active' : ''; ?>"> <?php _e('Diagnostics', 'tinyshield'); ?></a>
           </h2>
 
           <!--
@@ -639,7 +641,7 @@
 
           <!--
               **********************************
-                settings
+                activation
               **********************************
           -->
           <?php if($active_tab == 'activation'): ?>
@@ -714,6 +716,39 @@
               <?php endif; ?>
 
             <?php endif; ?>
+
+            <?php if($active_tab == 'diagnostics'): ?>
+
+              <h2 class="title"><?php _e('Diagnostics', 'tinyshield'); ?></h2>
+              <h3><?php _e('Clear Cached Blocklist', 'tinyshield'); ?></h3>
+
+              <form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+                <p>Use this to clear all addresses from your local cached blocklist. This is not recommended and only use in case of issues or if directed by support.</p>
+                <?php wp_nonce_field('tinyshield-clear-local-blocklist'); ?>
+                <input type="hidden" name="tinyshield_action" value="clear_cached_blocklist" />
+                <p><input class="button button-secondary" type="submit" name="clear_cached_blocklist" id="clear_cached_blocklist" value="<?php _e('Clear Cache Blocklist', 'tinyshield'); ?>" /></p>
+              </form>
+
+              <h3><?php _e('Clear Cached Allowlist', 'tinyshield'); ?></h3>
+
+              <form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+                <p>Use this to clear all addresses from your local cached allowlist. This is not recommended and only use in case of issues or if directed by support.</p>
+                <?php wp_nonce_field('tinyshield-clear-local-allowlist'); ?>
+                <input type="hidden" name="tinyshield_action" value="clear_cached_allowlist" />
+                <p><input class="button button-secondary" type="submit" name="clear_cached_allowlist" id="clear_cached_allowlist" value="<?php _e('Clear Cache Allowlist', 'tinyshield'); ?>" /></p>
+              </form>
+
+              <h3><?php _e('Clear Permanent Blocklist', 'tinyshield'); ?></h3>
+
+              <form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+                <p>Use this to clear all addresses from your permanent blocklist. This is not recommended and only use in case of issues or if directed by support.</p>
+                <?php wp_nonce_field('tinyshield-clear-permanent-blocklist'); ?>
+                <input type="hidden" name="tinyshield_action" value="clear_permanent_blocklist" />
+                <p><input class="button button-secondary" type="submit" name="clear_permanent_blocklist" id="clear_permanent_blocklist" value="<?php _e('Clear Permanent Blocklist', 'tinyshield'); ?>" /></p>
+              </form>
+
+            <?php endif; ?>
+
             <?php if($active_tab == 'settings'): ?>
 
               <h2 class="title"><?php _e('Options', 'tinyshield'); ?></h2>
@@ -822,36 +857,6 @@
 
                   <input type="submit" class="button button-primary" name="tinyshield_save_options" value="<?php _e('Save Settings', 'tinyshield') ?>" />
                 </div>
-              </form>
-
-              <hr />
-
-              <h2 class="title"><?php _e('Diagnostics', 'tinyshield'); ?></h2>
-              <h3><?php _e('Clear Cached Blocklist', 'tinyshield'); ?></h3>
-
-              <form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-                <p>Use this to clear all addresses from your local cached blocklist. This is not recommended and only use in case of issues or if directed by support.</p>
-                <?php wp_nonce_field('tinyshield-clear-local-blocklist'); ?>
-                <input type="hidden" name="tinyshield_action" value="clear_cached_blocklist" />
-                <p><input class="button button-secondary" type="submit" name="clear_cached_blocklist" id="clear_cached_blocklist" value="<?php _e('Clear Cache Blocklist', 'tinyshield'); ?>" /></p>
-              </form>
-
-              <h3><?php _e('Clear Cached Allowlist', 'tinyshield'); ?></h3>
-
-              <form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-                <p>Use this to clear all addresses from your local cached allowlist. This is not recommended and only use in case of issues or if directed by support.</p>
-                <?php wp_nonce_field('tinyshield-clear-local-allowlist'); ?>
-                <input type="hidden" name="tinyshield_action" value="clear_cached_allowlist" />
-                <p><input class="button button-secondary" type="submit" name="clear_cached_allowlist" id="clear_cached_allowlist" value="<?php _e('Clear Cache Allowlist', 'tinyshield'); ?>" /></p>
-              </form>
-
-              <h3><?php _e('Clear Permanent Blocklist', 'tinyshield'); ?></h3>
-
-              <form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-                <p>Use this to clear all addresses from your permanent blocklist. This is not recommended and only use in case of issues or if directed by support.</p>
-                <?php wp_nonce_field('tinyshield-clear-permanent-blocklist'); ?>
-                <input type="hidden" name="tinyshield_action" value="clear_permanent_blocklist" />
-                <p><input class="button button-secondary" type="submit" name="clear_permanent_blocklist" id="clear_permanent_blocklist" value="<?php _e('Clear Permanent Blocklist', 'tinyshield'); ?>" /></p>
               </form>
 
           <?php endif; ?>
