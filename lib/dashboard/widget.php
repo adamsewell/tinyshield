@@ -15,10 +15,11 @@
       $options = get_option('tinyshield_options');
 
       $subscriptions = array(
+        'not_active' => __('Site Not Activated', 'tinyshield'),
         'community' => __('Community', 'tinyshield'),
-        'single_site' => 'Single Site',
-        'five_sites' => 'Five Sites',
-        'unlimited' => 'Unlimited Sites'
+        'single_site' => __('Single Site', 'tinyshield'),
+        'five_sites' => __('Five Sites', 'tinyshield'),
+        'unlimited' => __('Unlimited Sites', 'tinyshield')
       );
 
       $news_feed = fetch_feed(self::$tinyshield_news_feed);
@@ -41,7 +42,7 @@
           </li>
           <?php endif; ?>
           <li>
-            <h4><?php _e('Your Subscription: ', 'tinyshield'); ?><strong><?php (!empty($options['subscription']) ? esc_attr_e($subscriptions[$options['subscription']]) : ''); ?></strong></h4>
+            <h4><?php _e('Your Subscription: ', 'tinyshield'); ?><strong><?php (!empty($options['subscription']) ? esc_attr_e($subscriptions[$options['subscription']]) : esc_attr_e($subscriptions['not_active'])); ?></strong></h4>
             <hr />
           </li>
           <li>
