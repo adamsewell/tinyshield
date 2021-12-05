@@ -282,8 +282,8 @@ class tinyShield{
 
 		self::write_log('------------------------------------------------------');
 		self::write_log('tinyShield WAF: IP - ' . $ip);
-		self::write_log('tinyShield WAF: Reqest Method - ' . $_SERVER['REQUEST_METHOD']);
-		self::write_log('tinyShield WAF: Reqest - ' .json_encode($_REQUEST));
+		self::write_log('tinyShield WAF: Request Method - ' . $_SERVER['REQUEST_METHOD']);
+		self::write_log('tinyShield WAF: Request - ' . json_encode($_REQUEST));
 		self::write_log('------------------------------------------------------');
 
 		//check if valid ip and check the local allowlist
